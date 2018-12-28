@@ -1,42 +1,111 @@
 import numpy as np
 import scipy.io
-import config
+from config import username, api_key, dimension
+import plotly
+
+plotly.tools.set_credentials_file(username=username, api_key=api_key)
+
 
 # ----------------------------------------------------------------------------------------------------
 #
-# RANDOM TREE GENERATION
+# RANDOM TREE GENERATION AND VISUALIZATION
 #
 # ----------------------------------------------------------------------------------------------------
 
 import collections
 from igraph import *
+import plotly.plotly as py
+import plotly.graph_objs as go
 
-def random_binary_tree(nodes):
-    v_label = map(str, range(nodes))
-    G = Graph.Tree(nodes, 2) # 2 stands for children number
+
+def random_tree(nodes, branching_factor):
+    labels = map(str, range(nodes))
+    G = Graph.Tree(nodes, branching_factor)
     lay = G.layout('rt')
+
+    es = EdgeSeq(G) # sequence of edges
+    E = [e.tuple for e in G.es] # list of edges
+
+    return G, E, labels
+
+def plot_tree(tree, nodes):
+    labels = map(str, range(nodes))
+    labels = list(labels)
+    lay = tree.layout('rt')
+    es = EdgeSeq(tree) # sequence of edges
+    E = [e.tuple for e in tree.es] # list of edges
 
     position = {k: lay[k] for k in range(nodes)}
     Y = [lay[k][1] for k in range(nodes)]
     M = max(Y)
 
-    es = EdgeSeq(G) # sequence of edges
-    E = [e.tuple for e in G.es] # list of edges
+    L = len(position)
+    Xn = [position[k][0] for k in range(L)]
+    Yn = [2*M-position[k][1] for k in range(L)]
+    Xe = []
+    Ye = []
+    for edge in E:
+        Xe+=[position[edge[0]][0],position[edge[1]][0], None]
+        Ye+=[2*M-position[edge[0]][1],2*M-position[edge[1]][1], None]
 
-    return E
 
-    # L = len(position)
-    # Xn = [position[k][0] for k in range(L)]
-    # Yn = [2*M-position[k][1] for k in range(L)]
-    # Xe = []
-    # Ye = []
-    # for edge in E:
-    #     Xe+=[position[edge[0]][0],position[edge[1]][0], None]
-    #     Ye+=[2*M-position[edge[0]][1],2*M-position[edge[1]][1], None]
-    #
-    # labels = v_label
+    lines = go.Scatter(x=Xe,
+                    y=Ye,
+                    mode='lines',
+                    line=dict(color='rgb(210,210,210)', width=1),
+                    hoverinfo='none'
+                    )
+    dots = go.Scatter(x=Xn,
+                    y=Yn,
+                    mode='markers',
+                    name='',
+                    marker=dict(symbol='dot',
+                                size=18,
+                                color='#6175c1',    #'#DB4551',
+                                line=dict(color='rgb(50,50,50)', width=1)
+                                ),
+                    text=labels,
+                    hoverinfo='text',
+                    opacity=0.8
+                    )
 
-print (random_binary_tree(40))
+    labels = list(labels)
+    print(labels)
+    print(L)
+    print(labels[0])
+    annotations = go.Annotations()
+    for k in range(L):
+        annotations.append(
+            go.Annotation(
+                text=labels[k], # or replace labels with a different list for the text within the circle
+                x=position[k][0], y=2*M-position[k][1],
+                xref='x1', yref='y1',
+                font=dict(color='rgb(250,250,250)', size=10),
+                showarrow=False)
+        )
+
+    axis = dict(showline=False, # hide axis line, grid, ticklabels and  title
+            zeroline=False,
+            showgrid=False,
+            showticklabels=False,
+            )
+
+    layout = dict(title= 'Tree with Reingold-Tilford Layout',
+                  annotations=annotations,
+                  font=dict(size=12),
+                  showlegend=False,
+                  xaxis=go.XAxis(axis),
+                  yaxis=go.YAxis(axis),
+                  margin=dict(l=40, r=40, b=85, t=100),
+                  hovermode='closest',
+                  plot_bgcolor='rgb(248,248,248)'
+                  )
+
+    data=go.Data([lines, dots])
+    fig=dict(data=data, layout=layout)
+    fig['layout'].update(annotations=annotations)
+    py.plot(fig, filename='Tree-Reingold-Tilf')
+
 
 class UndirectedGraph():
     def __init__(self, vertices):
@@ -87,6 +156,8 @@ def unweighted_tree(graph):
 #         print (edges)
 #     return edges
 
+
+
 # ----------------------------------------------------------------------------------------------------
 #
 # COMPUTE DISCRETE METRIC
@@ -101,14 +172,31 @@ def unweighted_tree(graph):
 
 from gensim.models.poincare import PoincareModel, PoincareRelations
 from gensim.test.utils import datapath
+from gensim.viz.poincare import poincare_2d_visualization
 
 DIMENSION = 2
-# file_path = datapath('/Users/muon/Documents/ML/poincare-embeddings/wordnet/mammal_closure.tsv')
+
+def plot_embedding(model, labels, title, filename):
+    plot = poincare_2d_visualization(model, labels, title)
+    py.plot(plot, filename=filename)
+
+# file_path = datapath('')
 
 # model = PoincareModel(PoincareRelations(file_path), negative=2, size=DIMENSION)
 # model.train(epochs=50)
 #
 # print(model.kv.vectors)
+
+tree, edges, labels = random_tree(100, 2)
+model = PoincareModel(edges, negative=2, size=DIMENSION)
+model.train(epochs=200)
+
+# print(model.kv.vectors)
+print(edges)
+print(list(labels))
+
+plot_tree(tree, 100)
+plot_embedding(model, list(labels), "Test Graph", "test10")
 
 
 '''
@@ -129,7 +217,6 @@ plotly.tools.set_credentials_file(username=config.username, api_key=config.api_k
 py.plot(plot, filename="test9")
 
 '''
-
 
 # Parameters
 # n x D matrix B (n points, D dimension)
