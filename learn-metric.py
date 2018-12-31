@@ -227,7 +227,6 @@ def ball_to_hyperboloid(B):
 # D = model.kv.vectors
 # D = ball_to_hyperboloid(D)
 
-'''
 edges = []
 randnet = open(os.getcwd() + "/data/randnet/psmodel_deg4_gma2.25_10_net.txt", "r")
 for line in randnet:
@@ -239,7 +238,7 @@ for line in randnet:
 model = PoincareModel(edges, negative=2, size=DIMENSION)
 model.train(epochs=200)
 plot_embedding(model, edges, "Test Graph", "test14")
-'''
+
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -247,7 +246,7 @@ plot_embedding(model, edges, "Test Graph", "test14")
 #
 # ----------------------------------------------------------------------------------------------------
 
-minkowski_diagonal = [1 for _ in range(DIMENSION)]
+minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
 minkowski_diagonal[0] = -1
 minkowski_metric_tensor = np.diag(minkowski_diagonal)
 print(minkowski_metric_tensor)
@@ -290,21 +289,17 @@ def L(Q):
 
     return total
 
+def gradL(Q):
+    G = minkowski_metric_tensor
+    ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
+    dz = lambda x, y : np.matmul(np.matmul(G, np.matmul(Q, x)), y.T) + np.matmul(np.matmul(G, np.matmul(Q, y)), x.T)
+    df = lambda x, y : (-1 / (-ip(x, y) + np.sqrt(ip(x, y) ** 2 - 1)) ** 2) * (-1 + (ip(x, y) / np.sqrt(ip(x, y) ** 2 - 1))) * (dz(x, y))
+
+    for edge in S:
 
 
-def learn_Q(Q_initial, learning_rate, precision, max_iters, grad):
-    iters = 0
-    prev_step = 1
-    cur_Q = Q_initial
-    while prev_step > precision and iters < max_iters:
-        prev_Q = cur_Q #Store current x value in prev_x
-        cur_Q = cur_Q - learning_rate * grad(prev_Q) #Grad descent
-        prev_step = abs(cur_Q - prev_Q) #Change in x
-        iters = iters+1 #iteration count
+    total = 0
 
-    return cur_Q
-
-# print( learn_Q(Q_initial, 0.01, 0.000001, 100000, grad(loss_function)) )
 
 # ----------------------------------------------------------------------------------------------------
 #
