@@ -246,6 +246,8 @@ plot_embedding(model, edges, "Test Graph", "test14")
 #
 # ----------------------------------------------------------------------------------------------------
 
+from scipy.optimize import minimize
+
 minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
 minkowski_diagonal[0] = -1
 minkowski_metric_tensor = np.diag(minkowski_diagonal)
@@ -273,19 +275,34 @@ def loss_function(Q):
     return total
 '''
 
-def modified_distance(x, y, Q, G):
-    modified_metric = np.matmul(np.matmul(Q.T, G), Q)
-    return np.negative(np.matmul(np.matmul(x.T, modified_metric), y.T))
+def Negatives(x, n):
+    samples = []
+    for edge in D:
+        if x in edge:
+            samples.append(edge)
+        if len(samples) == n:
+            break
+
+    return samples
+
+NEGATIVES = 5
 
 def L(Q):
-    total = 0
-    for i in S:
-        x = modified_distance(i[0], i[1], Q, minkowski_metric_tensor)
-        total += 1. / (x + np.sqrt(x**2 - 1))
+    G = minkowski_metric_tensor
+    ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
 
-    for j in D:
-        x = modified_distance(j[0], j[1], Q, minkowski_metric_tensor)
-        total -= 1. / (x + np.sqrt(x**2 - 1))
+    total = 0
+    for edge in S:
+        x = edge[0]
+        y = edge[1]
+        num = 1. / (-ip(x, y) + np.sqrt(ip(x, y)**2 - 1))
+
+        denom = 0
+        samples = Negatives(x, NEGATIVES)
+        for sample in samples:
+            denom += 1. / (-ip(sample[0], sample[1]) + np.sqrt(ip(sample[0], sample[1])**2 - 1))
+
+        total += num / denom
 
     return total
 
@@ -295,10 +312,25 @@ def gradL(Q):
     dz = lambda x, y : np.matmul(np.matmul(G, np.matmul(Q, x)), y.T) + np.matmul(np.matmul(G, np.matmul(Q, y)), x.T)
     df = lambda x, y : (-1 / (-ip(x, y) + np.sqrt(ip(x, y) ** 2 - 1)) ** 2) * (-1 + (ip(x, y) / np.sqrt(ip(x, y) ** 2 - 1))) * (dz(x, y))
 
-    for edge in S:
-
-
     total = 0
+    for edge in S:
+        x = edge[0]
+        y = edge[1]
+        num = df(x, y)
+
+        denom = 0
+        samples = Negatives(x, NEGATIVES)
+        for sample in samples:
+            denom += df(sample[0], sample[1])
+
+        total += num / denom
+
+    return total
+
+Q0 = np.diag([1 for _ in range(DIMENSION+1)])
+res_NelderMead = minimize(L, Q0, method='nelder-mead', options={'xtol': 1e-8, 'disp': True})
+print(res_NelderMead)
+# res_BFGS = minimize(L, Q0, method='BFGS', jac=gradL, options={'disp': True})
 
 
 # ----------------------------------------------------------------------------------------------------
