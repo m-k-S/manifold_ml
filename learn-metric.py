@@ -133,17 +133,15 @@ from scipy.optimize import minimize
 minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
 minkowski_diagonal[0] = -1
 minkowski_metric_tensor = np.diag(minkowski_diagonal)
-print(minkowski_metric_tensor)
-
-
-# model.kv.__getitem__([similar_node1, similar_node2, ...])
 
 # Require that (x-y)^T Q^T G Q (x - y) > 0 otherwise we don't have a true sense of distance (ie want PSD Q)
 
 def Negatives(x, n):
     samples = []
     for edge in D:
-        if x in edge:
+        w = x == edge[0]
+        v = x == edge[1]
+        if w.all() or v.all():
             samples.append(edge)
         if len(samples) == n:
             break
@@ -155,11 +153,13 @@ NEGATIVES = 5
 def L(Q):
     G = minkowski_metric_tensor
     ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
+    Q = Q.reshape(3, 3)
 
     total = 0
     for edge in S:
         x = edge[0]
         y = edge[1]
+
         num = 1. / (-ip(x, y) + np.sqrt(ip(x, y)**2 - 1))
 
         denom = 0
@@ -173,6 +173,8 @@ def L(Q):
 
 def gradL(Q):
     G = minkowski_metric_tensor
+    Q = Q.reshape(3, 3)
+
     ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
     dz = lambda x, y : np.matmul(np.matmul(G, np.matmul(Q, x)), y.T) + np.matmul(np.matmul(G, np.matmul(Q, y)), x.T)
     df = lambda x, y : (-1 / (-ip(x, y) + np.sqrt(ip(x, y) ** 2 - 1)) ** 2) * (-1 + (ip(x, y) / np.sqrt(ip(x, y) ** 2 - 1))) * (dz(x, y))
