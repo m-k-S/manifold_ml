@@ -96,22 +96,31 @@ def b2h_Vector(v):
 B = model.kv.vectors
 B = b2h_Matrix(B)
 
-S = []
-D = []
+S_Labels = []
+D_Labels = []
 for i in range(1, len(Labels) + 1):
     for j in range(1, len(Labels) + 1):
         if i != j:
             if Labels[i-1] == Labels[j-1]:
-                if not ([str(i), str(j)] in S) and not ([str(j), str(i)] in S):
-                    S.append([str(i), str(j)])
+                if not ([str(i), str(j)] in S_Labels) and not ([str(j), str(i)] in S_Labels):
+                    S_Labels.append([str(i), str(j)])
             else:
-                if not ([str(i), str(j)] in D) and not ([str(j), str(i)] in D):
-                    D.append([str(i), str(j)])
+                if not ([str(i), str(j)] in D_Labels) and not ([str(j), str(i)] in D_Labels):
+                    D_Labels.append([str(i), str(j)])
 
 # print(S)
 
-for edge in S:
-    print (model.kv.__getitem__(edge[0]))
+S = []
+for edge in S_Labels:
+    x = b2h_Vector(model.kv.__getitem__(edge[0]))
+    y = b2h_Vector(model.kv.__getitem__(edge[1]))
+    S.append([x, y])
+
+D = []
+for edge in D_Labels:
+    x = b2h_Vector(model.kv.__getitem__(edge[0]))
+    y = b2h_Vector(model.kv.__getitem__(edge[1]))
+    D.append([x, y])
 
 # ----------------------------------------------------------------------------------------------------
 #
