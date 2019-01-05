@@ -32,12 +32,6 @@ print(Labels)
 
 # ----------------------------------------------------------------------------------------------------
 #
-# COMPUTE DISCRETE METRIC
-#
-# ----------------------------------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------------------------------
-#
 # POINCARE EMBEDDING (AND CONVERSION TO HYPERBOLOID)
 #
 # ----------------------------------------------------------------------------------------------------
@@ -128,7 +122,8 @@ for edge in D_Labels:
 #
 # ----------------------------------------------------------------------------------------------------
 
-from scipy.optimize import minimize
+from scipy.optimize import minimize, NonlinearConstraint
+from scipy.integrate import quad
 
 minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
 minkowski_diagonal[0] = -1
@@ -153,7 +148,7 @@ NEGATIVES = 5
 def L(Q):
     G = minkowski_metric_tensor
     ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
-    Q = Q.reshape(3, 3)
+    Q = Q.reshape(DIMENSION+1, DIMENSION+1)
 
     total = 0
     for edge in S:
@@ -173,7 +168,7 @@ def L(Q):
 
 def gradL(Q):
     G = minkowski_metric_tensor
-    Q = Q.reshape(3, 3)
+    Q = Q.reshape(DIMENSION+1, DIMENSION+1)
 
     ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
     dz = lambda x, y : np.matmul(np.matmul(G, np.matmul(Q, x)), y.T) + np.matmul(np.matmul(G, np.matmul(Q, y)), x.T)
@@ -194,11 +189,73 @@ def gradL(Q):
 
     return total
 
-Q0 = np.diag([1 for _ in range(DIMENSION+1)])
-res_NelderMead = minimize(L, Q0, method='nelder-mead', options={'xtol': 1e-8, 'disp': True})
-print(res_NelderMead)
-# res_BFGS = minimize(L, Q0, method='BFGS', jac=gradL, options={'disp': True})
+def compute_distance(x, y, Q):
+    x = x[1:]
+    y = y[1:]
+    def integrand(t, x, y, Q):
+        Pth = (1 - t) * x + y * t
+        Dff = y-x
+        ip = lambda x, y : np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
+        nm = lambda x, y : np.matmul(Pth.T, Dff)
+        dn = lambda x, y : 1 + np.matmul(Pth.T, Pth)
 
+        # print (ip(x, y) + (nm(x,y) ** 2 / dn(x, y)))
+        return np.sqrt( ip(x, y) + (nm(x,y)**2 / dn(x, y)) )
+
+    Distance = quad(integrand, 0, 1, args=(x, y, Q))
+    return Distance[0]
+
+def grad_distance(x, y, Q):
+    x = x[1:]
+    y = y[1:]
+    def integrand(t, x, y, Q):
+        A = (1 - t) * x + y * t
+        ip = lambda x, y : np.matmul((y-x).T, np.matmul(Q.T, np.matmul(Q, y-x)))
+        nm = lambda x, y : np.matmul(A.T, x-y)
+        np = lambda x, y : 1 + np.matmul(A.T, A)
+
+        dz = 1. / ( 2 * (np.sqrt( ip(x, y) + (nm(x,y) ** 2 / np(x, y)) )) )
+        df = 2 * np.matmul(np.matmul(Q, x-y), (x-y).T)
+
+        return dz * df
+
+    grad_Distance = quad(integrand, 0, 1, args=(x, y, Q))
+    return grad_Distance[0] # returns a n x n matrix
+
+def Loss2(Q):
+    Q = Q.reshape(DIMENSION, DIMENSION)
+    total = 0
+    for edge in S:
+        x = edge[0]
+        y = edge[1]
+        dQ = compute_distance(x, y, Q)
+
+        total += dQ
+
+    for edge in D:
+        x = edge[0]
+        y = edge[1]
+        dQ = compute_distance(x, y, Q)
+
+        total -= dQ
+
+    return total
+
+
+Q0 = np.diag([1 for _ in range(DIMENSION)])
+# Q0 = minkowski_metric_tensor
+
+res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
+print(res_NelderMead)
+
+# res_BFGS = minimize(L, Q0, method='BFGS', jac=gradL, options={'disp': True})
+# print(res_BFGS)
+
+# ----------------------------------------------------------------------------------------------------
+#
+# COMPUTE DISCRETE METRIC
+#
+# ----------------------------------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------------------------------
 #
