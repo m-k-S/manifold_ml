@@ -110,6 +110,8 @@ for edge in S_Labels:
     y = b2h_Vector(model.kv.__getitem__(edge[1]))
     S.append([x, y])
 
+print ("DISTANCE BTWN PAIR 1: " + str(model.kv.distance(S_Labels[0][0], S_Labels[0][1])))
+
 D = []
 for edge in D_Labels:
     x = b2h_Vector(model.kv.__getitem__(edge[0]))
@@ -189,6 +191,61 @@ def gradL(Q):
 
     return total
 
+def learn_distance(x, y, Q, samples=100, segments=100):
+    def integrand(t, x, y, Q):
+        Pth = (1 - t) * x + y * t
+        Dff = y-x
+        ip = lambda x, y : np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
+        nm = lambda x, y : np.matmul(Pth.T, Dff)
+        dn = lambda x, y : 1 + np.matmul(Pth.T, Pth)
+
+        return np.sqrt( ip(x, y) + (nm(x,y)**2 / dn(x, y)) )
+
+    x = x[1:]
+    y = y[1:]
+    path_segments = []
+    for i in range(segments):
+        path_segments.append((i/segments * (y - x)) + x)
+
+    total_distance = 0
+    convergence = False
+
+    while convergence is False:
+        for idx, segment in enumerate(path_segments):
+            if idx == segments - 2:
+                total_distance += quad(integrand, 0, 1, args=(segment, y, Q))[0]
+                break
+            else:
+                sample_radius = max(np.linalg.norm(segment - path_segments[idx-1]), np.linalg.norm(segment - path_segments[idx+1])) / 2
+
+                s = np.random.normal(size=(samples, DIMENSION))
+                dn = np.hstack((np.linalg.norm(s, axis=1)[:, np.newaxis], np.linalg.norm(s, axis=1)[:, np.newaxis]))
+                s = np.divide(s, dn)
+
+                min_dist = [np.inf for _ in range(segments)]
+                best_sample = 0
+                for sample in s:
+                    sample *= sample_radius
+                    sample = sample + segment
+                    Distance = quad(integrand, 0, 1, args=(segment, sample, Q))[0]
+                    if Distance < min_dist[idx]:
+                        if np.isinf(min_dist[idx]) == False:
+                            min_dist[idx] = Distance
+                            total_distance += min_dist[idx]
+                        else:
+                            total_distance -= min_dist[idx]
+                            min_dist[idx] = Distance
+                            total_distance += Distance
+                            best_sample = sample
+
+                if np.linalg.norm(path_segments[idx+1] - best_sample) < 10e-4:
+                    convergence = True
+                    break
+                else:
+                    path_segments[idx+1] = best_sample
+
+        return total_distance
+
 def compute_distance(x, y, Q):
     x = x[1:]
     y = y[1:]
@@ -212,9 +269,9 @@ def grad_distance(x, y, Q):
         A = (1 - t) * x + y * t
         ip = lambda x, y : np.matmul((y-x).T, np.matmul(Q.T, np.matmul(Q, y-x)))
         nm = lambda x, y : np.matmul(A.T, x-y)
-        np = lambda x, y : 1 + np.matmul(A.T, A)
+        dn = lambda x, y : 1 + np.matmul(A.T, A)
 
-        dz = 1. / ( 2 * (np.sqrt( ip(x, y) + (nm(x,y) ** 2 / np(x, y)) )) )
+        dz = 1. / ( 2 * (np.sqrt( ip(x, y) + (nm(x,y) ** 2 / dn(x, y)) )) )
         df = 2 * np.matmul(np.matmul(Q, x-y), (x-y).T)
 
         return dz * df
@@ -224,32 +281,62 @@ def grad_distance(x, y, Q):
 
 def Loss2(Q):
     Q = Q.reshape(DIMENSION, DIMENSION)
+    print(Q)
     total = 0
     for edge in S:
         x = edge[0]
         y = edge[1]
-        dQ = compute_distance(x, y, Q)
+        dQ = learn_distance(x, y, Q)
 
         total += dQ
 
     for edge in D:
         x = edge[0]
         y = edge[1]
-        dQ = compute_distance(x, y, Q)
+        dQ = learn_distance(x, y, Q)
 
         total -= dQ
 
     return total
 
+def gradL2(Q):
+    Q = Q.reshape(DIMENSION, DIMENSION)
+    total = 0
+    for edge in S:
+        x = edge[0]
+        y = edge[1]
+        dQ = grad_distance(x, y, Q)
+
+        total += dQ
+
+    for edge in D:
+        x = edge[0]
+        y = edge[1]
+        dQ = grad_distance(x, y, Q)
+
+        total -= dQ
+
+    return total
 
 Q0 = np.diag([1 for _ in range(DIMENSION)])
 # Q0 = minkowski_metric_tensor
 
-res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
-print(res_NelderMead)
+print (learn_distance(S[0][0], S[0][1], Q0))
 
-# res_BFGS = minimize(L, Q0, method='BFGS', jac=gradL, options={'disp': True})
+# res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
+# print(res_NelderMead)
+
+# res_BFGS = minimize(Loss2, Q0, method='BFGS', jac=gradL2, options={'disp': True})
 # print(res_BFGS)
+
+# ----------------------------------------------------------------------------------------------------
+#
+# PLOT DATA
+#
+# ----------------------------------------------------------------------------------------------------
+
+Initial_Data = B
+
 
 # ----------------------------------------------------------------------------------------------------
 #
