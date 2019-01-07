@@ -27,7 +27,7 @@ Tree = generate_tree(20, 'pref', 'hier')
 Edges = [[str(int(node)) for node in edge] for edge in Tree[0]]
 Labels = [int(label[0]) for label in Tree[3]]
 
-print(Labels)
+# print(Labels)
 # print(Edges)
 
 # ----------------------------------------------------------------------------------------------------
@@ -50,6 +50,13 @@ def plot_embedding(model, labels, title, filename):
 # file_path = datapath('')
 # model = PoincareModel(PoincareRelations(file_path), negative=2, size=DIMENSION)
 # model.train(epochs=50)
+
+'''
+REAL DATA
+
+# polblogs1 = scipy.io.loadmat('./data/realnet/polblogs_data_1.mat')
+# print(polblogs1.keys())
+'''
 
 '''
 edges = []
@@ -111,6 +118,10 @@ for edge in S_Labels:
     S.append([x, y])
 
 print ("DISTANCE BTWN PAIR 1: " + str(model.kv.distance(S_Labels[0][0], S_Labels[0][1])))
+
+lip = lambda x, y : -x[0] * y[0] + sum([x[i] * y[i] for i in range(1, len(x))])
+dhyp = lambda x, y : np.arccosh(-lip(x, y))
+print ("sanity check - dist on hyperboloid btwn pair 1 is: " + str(dhyp(S[0][0], S[0][1])))
 
 D = []
 for edge in D_Labels:
@@ -193,58 +204,113 @@ def gradL(Q):
 
 def learn_distance(x, y, Q, samples=100, segments=100):
     def integrand(t, x, y, Q):
-        Pth = (1 - t) * x + y * t
+        Pth = (1 - t) * x + (y * t)
         Dff = y-x
-        ip = lambda x, y : np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
-        nm = lambda x, y : np.matmul(Pth.T, Dff)
-        dn = lambda x, y : 1 + np.matmul(Pth.T, Pth)
+        ip = np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
+        nm = np.matmul(Pth.T, Dff)
+        dn = 1 + np.matmul(Pth.T, Pth)
 
-        return np.sqrt( ip(x, y) + (nm(x,y)**2 / dn(x, y)) )
+        return np.sqrt( ip + (nm**2 / dn) )
+#### PERHAPS SWITCH TO EUCLIDEAN DISTANCE FOR TESTING PURPOSES?? IGNORE Q
+#### in distance calculation
 
     x = x[1:]
     y = y[1:]
     path_segments = []
     for i in range(segments):
-        path_segments.append((i/segments * (y - x)) + x)
+        path_segments.append((i / (segments-1) * (y - x)) + x)
+### DO RANOMISH INITIALIZATION RATHER THAN LINSPACE INITIALIZATION?  SO THAT WE CAN RECOVER BACK
+### STRAIGHT LINE BACK (IE DONT START WITH STRAIGHT LINE)
+### ONE WAY IS TO ADD RANDOM JITTER TO EACH SEGMENT INITIALLY
+
+    convergence = True
+
+    while convergence is True:
+        convergence = False
+
+        # make sure this loop goes  length(path_segments) -2 stimes  idx=1 to idx=length(path_segments)-2 (inclusive)
+        # this is what is happening
+        for idx, segment in enumerate(path_segments[1:-1]):
+            i = idx + 1
+            this_point = segment
+            prev_point = path_segments[i-1]
+            next_point = path_segments[i+1]
+
+            sample_radius = max(np.linalg.norm(this_point - prev_point), np.linalg.norm(this_point - next_point))
+            #sample_radius = max(np.linalg.norm(segment - path_segments[idx-1]), np.linalg.norm(segment - path_segments[idx+1])) / 2
+
+            # Generate random vectors and normalize them
+            s = np.random.uniform(-sample_radius,sample_radius,size=(samples, DIMENSION))
+
+
+            # D1 = quad(integrand, 0, 1, args=(prev_point, this_point, Q))[0]
+            # D2 = quad(integrand, 0, 1, args=(this_point, next_point, Q))[0]
+            this_point_x0 = np.sqrt(1 + np.dot(this_point.T, this_point))
+            next_point_x0 = np.sqrt(1 + np.dot(next_point.T, next_point))
+            prev_point_x0 = np.sqrt(1 + np.dot(prev_point.T, prev_point))
+
+            # this_point_hyp = np.concatenate((this_point_x0, this_point))
+            # next_point_hyp = np.concatenate((next_point_x0, next_point))
+            # prev_point_hyp = np.concatenate((prev_point_x0, prev_point))
+
+            this_point_hyp = [this_point_x0, this_point[0], this_point[1]]
+            next_point_hyp = [next_point_x0, next_point[0], next_point[1]]
+            prev_point_hyp = [prev_point_x0, prev_point[0], prev_point[1]]
+
+            # this_point_hyp.insert(0, this_point_x0)
+            # next_point_hyp.insert(0, next_point_x0)
+            # prev_point_hyp.insert(0, prev_point_x0)
+
+            D1 = dhyp(prev_point_hyp, this_point_hyp)
+            D2 = dhyp(this_point_hyp, next_point_hyp)
+
+            min_dist = D1+D2
+            best_sample = this_point  # maybe nan?
+            for sample in s:
+                # Add sample to current point
+                sample = sample + this_point
+                # Check distance on manifold from current point to sample point
+
+
+                # D1 = quad(integrand, 0, 1, args=(prev_point, sample, Q))[0]
+                # D2 = quad(integrand, 0, 1, args=(sample, next_point, Q))[0]
+                sample_x0 = np.sqrt(1 + np.dot(sample.T, sample))
+                # sample_hyp = np.concatenate((sample_x0, sample))
+                sample_hyp = [sample_x0, sample[0], sample[1]]
+
+                # sample_hyp.insert(0, sample_x0)
+
+                D1 = dhyp(prev_point_hyp, sample_hyp)
+                D2 = dhyp(sample_hyp, next_point_hyp)
+
+                Distance = D1 + D2
+                if Distance < min_dist:
+                    min_dist = Distance
+                    best_sample = sample
+
+                    total_distance = 0
+                    for ti in range(len(path_segments[:-1])):
+                        tdist = quad(integrand, 0, 1, args=(path_segments[ti], path_segments[ti+1], Q))[0]
+                        total_distance += tdist
+                    print('>>>>' + str(total_distance))
+
+
+            if np.linalg.norm(this_point - best_sample) < 10e-6:
+                path_segments[i] = best_sample
+            else:
+                convergence = True
+                path_segments[i] = best_sample
+
+    # while loop ends
+
+    print(path_segments)
 
     total_distance = 0
-    convergence = False
+    for idx in range(len(path_segments[:-1])):
+        Distance = quad(integrand, 0, 1, args=(path_segments[idx], path_segments[idx+1], Q))[0]
+        total_distance += Distance
 
-    while convergence is False:
-        for idx, segment in enumerate(path_segments):
-            if idx == segments - 2:
-                total_distance += quad(integrand, 0, 1, args=(segment, y, Q))[0]
-                break
-            else:
-                sample_radius = max(np.linalg.norm(segment - path_segments[idx-1]), np.linalg.norm(segment - path_segments[idx+1])) / 2
-
-                s = np.random.normal(size=(samples, DIMENSION))
-                dn = np.hstack((np.linalg.norm(s, axis=1)[:, np.newaxis], np.linalg.norm(s, axis=1)[:, np.newaxis]))
-                s = np.divide(s, dn)
-
-                min_dist = [np.inf for _ in range(segments)]
-                best_sample = 0
-                for sample in s:
-                    sample *= sample_radius
-                    sample = sample + segment
-                    Distance = quad(integrand, 0, 1, args=(segment, sample, Q))[0]
-                    if Distance < min_dist[idx]:
-                        if np.isinf(min_dist[idx]) == False:
-                            min_dist[idx] = Distance
-                            total_distance += min_dist[idx]
-                        else:
-                            total_distance -= min_dist[idx]
-                            min_dist[idx] = Distance
-                            total_distance += Distance
-                            best_sample = sample
-
-                if np.linalg.norm(path_segments[idx+1] - best_sample) < 10e-4:
-                    convergence = True
-                    break
-                else:
-                    path_segments[idx+1] = best_sample
-
-        return total_distance
+    return total_distance
 
 def compute_distance(x, y, Q):
     x = x[1:]
@@ -321,7 +387,14 @@ def gradL2(Q):
 Q0 = np.diag([1 for _ in range(DIMENSION)])
 # Q0 = minkowski_metric_tensor
 
-print (learn_distance(S[0][0], S[0][1], Q0))
+new_x = np.array([1, 0, 0])
+new_y = np.array([np.sqrt(5), 2, 0])
+
+# print (learn_distance(new_x, new_y, Q0, 1000, 7))
+# print (dhyp(new_x, new_y))
+
+print (learn_distance(S[0][0], S[0][1], Q0, 1000, 7))
+print (compute_distance(S[0][0], S[0][1], Q0))
 
 # res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
 # print(res_NelderMead)
@@ -349,9 +422,3 @@ Initial_Data = B
 # RECONSTRUCT TREE
 #
 # ----------------------------------------------------------------------------------------------------
-
-
-
-
-# polblogs1 = scipy.io.loadmat('./data/realnet/polblogs_data_1.mat')
-# print(polblogs1.keys())
