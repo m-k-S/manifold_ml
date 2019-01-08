@@ -210,7 +210,7 @@ def learn_distance(x, y, Q, samples=100, segments=100):
         nm = np.matmul(Pth.T, Dff)
         dn = 1 + np.matmul(Pth.T, Pth)
 
-        return np.sqrt( ip + (nm**2 / dn) )
+        return np.sqrt( ip - (nm**2 / dn) )
 #### PERHAPS SWITCH TO EUCLIDEAN DISTANCE FOR TESTING PURPOSES?? IGNORE Q
 #### in distance calculation
 
@@ -243,26 +243,17 @@ def learn_distance(x, y, Q, samples=100, segments=100):
             s = np.random.uniform(-sample_radius,sample_radius,size=(samples, DIMENSION))
 
 
-            # D1 = quad(integrand, 0, 1, args=(prev_point, this_point, Q))[0]
-            # D2 = quad(integrand, 0, 1, args=(this_point, next_point, Q))[0]
-            this_point_x0 = np.sqrt(1 + np.dot(this_point.T, this_point))
-            next_point_x0 = np.sqrt(1 + np.dot(next_point.T, next_point))
-            prev_point_x0 = np.sqrt(1 + np.dot(prev_point.T, prev_point))
+            D1 = quad(integrand, 0, 1, args=(prev_point, this_point, Q))[0]
+            D2 = quad(integrand, 0, 1, args=(this_point, next_point, Q))[0]
 
-            # this_point_hyp = np.concatenate((this_point_x0, this_point))
-            # next_point_hyp = np.concatenate((next_point_x0, next_point))
-            # prev_point_hyp = np.concatenate((prev_point_x0, prev_point))
-
-            this_point_hyp = [this_point_x0, this_point[0], this_point[1]]
-            next_point_hyp = [next_point_x0, next_point[0], next_point[1]]
-            prev_point_hyp = [prev_point_x0, prev_point[0], prev_point[1]]
-
-            # this_point_hyp.insert(0, this_point_x0)
-            # next_point_hyp.insert(0, next_point_x0)
-            # prev_point_hyp.insert(0, prev_point_x0)
-
-            D1 = dhyp(prev_point_hyp, this_point_hyp)
-            D2 = dhyp(this_point_hyp, next_point_hyp)
+            # this_point_x0 = np.sqrt(1 + np.dot(this_point.T, this_point))
+            # next_point_x0 = np.sqrt(1 + np.dot(next_point.T, next_point))
+            # prev_point_x0 = np.sqrt(1 + np.dot(prev_point.T, prev_point))
+            # this_point_hyp = [this_point_x0, this_point[0], this_point[1]]
+            # next_point_hyp = [next_point_x0, next_point[0], next_point[1]]
+            # prev_point_hyp = [prev_point_x0, prev_point[0], prev_point[1]]
+            # D1 = dhyp(prev_point_hyp, this_point_hyp)
+            # D2 = dhyp(this_point_hyp, next_point_hyp)
 
             min_dist = D1+D2
             best_sample = this_point  # maybe nan?
@@ -272,16 +263,14 @@ def learn_distance(x, y, Q, samples=100, segments=100):
                 # Check distance on manifold from current point to sample point
 
 
-                # D1 = quad(integrand, 0, 1, args=(prev_point, sample, Q))[0]
-                # D2 = quad(integrand, 0, 1, args=(sample, next_point, Q))[0]
-                sample_x0 = np.sqrt(1 + np.dot(sample.T, sample))
-                # sample_hyp = np.concatenate((sample_x0, sample))
-                sample_hyp = [sample_x0, sample[0], sample[1]]
+                D1 = quad(integrand, 0, 1, args=(prev_point, sample, Q))[0]
+                D2 = quad(integrand, 0, 1, args=(sample, next_point, Q))[0]
 
-                # sample_hyp.insert(0, sample_x0)
+                # sample_x0 = np.sqrt(1 + np.dot(sample.T, sample))
+                # sample_hyp = [sample_x0, sample[0], sample[1]]
 
-                D1 = dhyp(prev_point_hyp, sample_hyp)
-                D2 = dhyp(sample_hyp, next_point_hyp)
+                # D1 = dhyp(prev_point_hyp, sample_hyp)
+                # D2 = dhyp(sample_hyp, next_point_hyp)
 
                 Distance = D1 + D2
                 if Distance < min_dist:
@@ -323,7 +312,7 @@ def compute_distance(x, y, Q):
         dn = lambda x, y : 1 + np.matmul(Pth.T, Pth)
 
         # print (ip(x, y) + (nm(x,y) ** 2 / dn(x, y)))
-        return np.sqrt( ip(x, y) + (nm(x,y)**2 / dn(x, y)) )
+        return np.sqrt( ip(x, y) - (nm(x,y)**2 / dn(x, y)) )
 
     Distance = quad(integrand, 0, 1, args=(x, y, Q))
     return Distance[0]
@@ -387,17 +376,18 @@ def gradL2(Q):
 Q0 = np.diag([1 for _ in range(DIMENSION)])
 # Q0 = minkowski_metric_tensor
 
-new_x = np.array([1, 0, 0])
-new_y = np.array([np.sqrt(5), 2, 0])
+new_x = np.array([np.sqrt(9), 2, 2])
+new_y = np.array([np.sqrt(9), -2, 2])
 
 # print (learn_distance(new_x, new_y, Q0, 1000, 7))
 # print (dhyp(new_x, new_y))
+# print (compute_distance(new_x, new_y, Q0))
 
-print (learn_distance(S[0][0], S[0][1], Q0, 1000, 7))
-print (compute_distance(S[0][0], S[0][1], Q0))
+# print (learn_distance(S[0][0], S[0][1], Q0, 1000, 7))
+# print (compute_distance(S[0][0], S[0][1], Q0))
 
-# res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
-# print(res_NelderMead)
+res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
+print(res_NelderMead)
 
 # res_BFGS = minimize(Loss2, Q0, method='BFGS', jac=gradL2, options={'disp': True})
 # print(res_BFGS)
