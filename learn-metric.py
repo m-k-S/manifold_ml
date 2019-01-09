@@ -202,7 +202,7 @@ def gradL(Q):
 
     return total
 
-def learn_distance(x, y, Q, samples=100, segments=100):
+def learn_distance(x, y, Q, samples=100, segments=7):
     def integrand(t, x, y, Q):
         Pth = (1 - t) * x + (y * t)
         Dff = y-x
@@ -277,11 +277,11 @@ def learn_distance(x, y, Q, samples=100, segments=100):
                     min_dist = Distance
                     best_sample = sample
 
-                    total_distance = 0
-                    for ti in range(len(path_segments[:-1])):
-                        tdist = quad(integrand, 0, 1, args=(path_segments[ti], path_segments[ti+1], Q))[0]
-                        total_distance += tdist
-                    print('>>>>' + str(total_distance))
+                    # total_distance = 0
+                    # for ti in range(len(path_segments[:-1])):
+                    #     tdist = quad(integrand, 0, 1, args=(path_segments[ti], path_segments[ti+1], Q))[0]
+                    #     total_distance += tdist
+                    # print('>>>>' + str(total_distance))
 
 
             if np.linalg.norm(this_point - best_sample) < 10e-6:
@@ -292,7 +292,7 @@ def learn_distance(x, y, Q, samples=100, segments=100):
 
     # while loop ends
 
-    print(path_segments)
+    # print(path_segments)
 
     total_distance = 0
     for idx in range(len(path_segments[:-1])):
@@ -326,7 +326,7 @@ def grad_distance(x, y, Q):
         nm = lambda x, y : np.matmul(A.T, x-y)
         dn = lambda x, y : 1 + np.matmul(A.T, A)
 
-        dz = 1. / ( 2 * (np.sqrt( ip(x, y) + (nm(x,y) ** 2 / dn(x, y)) )) )
+        dz = 1. / ( 2 * (np.sqrt( ip(x, y) - (nm(x,y) ** 2 / dn(x, y)) )) )
         df = 2 * np.matmul(np.matmul(Q, x-y), (x-y).T)
 
         return dz * df
@@ -386,11 +386,11 @@ new_y = np.array([np.sqrt(9), -2, 2])
 # print (learn_distance(S[0][0], S[0][1], Q0, 1000, 7))
 # print (compute_distance(S[0][0], S[0][1], Q0))
 
-res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
-print(res_NelderMead)
+# res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
+# print(res_NelderMead)
 
-# res_BFGS = minimize(Loss2, Q0, method='BFGS', jac=gradL2, options={'disp': True})
-# print(res_BFGS)
+res_BFGS = minimize(Loss2, Q0, method='BFGS', options={'disp': True})
+print(res_BFGS)
 
 # ----------------------------------------------------------------------------------------------------
 #
