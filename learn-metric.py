@@ -97,6 +97,15 @@ def b2h_Vector(v):
 B = model.kv.vectors
 B = b2h_Matrix(B)
 
+V = {}
+for i in range(1, len(Labels) + 1):
+    vector = model.kv.__getitem__(str(i))
+    vector = b2h_Vector(vector)
+    V[str(i)] = vector
+
+print(V)
+
+
 S_Labels = []
 D_Labels = []
 for i in range(1, len(Labels) + 1):
@@ -142,8 +151,6 @@ minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
 minkowski_diagonal[0] = -1
 minkowski_metric_tensor = np.diag(minkowski_diagonal)
 
-# Require that (x-y)^T Q^T G Q (x - y) > 0 otherwise we don't have a true sense of distance (ie want PSD Q)
-
 def Negatives(x, n):
     samples = []
     for edge in D:
@@ -158,50 +165,6 @@ def Negatives(x, n):
 
 NEGATIVES = 5
 
-def L(Q):
-    G = minkowski_metric_tensor
-    ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
-    Q = Q.reshape(DIMENSION+1, DIMENSION+1)
-
-    total = 0
-    for edge in S:
-        x = edge[0]
-        y = edge[1]
-
-        num = 1. / (-ip(x, y) + np.sqrt(ip(x, y)**2 - 1))
-
-        denom = 0
-        samples = Negatives(x, NEGATIVES)
-        for sample in samples:
-            denom += 1. / (-ip(sample[0], sample[1]) + np.sqrt(ip(sample[0], sample[1])**2 - 1))
-
-        total += num / denom
-
-    return total
-
-def gradL(Q):
-    G = minkowski_metric_tensor
-    Q = Q.reshape(DIMENSION+1, DIMENSION+1)
-
-    ip = lambda x, y : np.matmul(x.T, np.matmul(Q.T, np.matmul(G, np.matmul(Q, y))))
-    dz = lambda x, y : np.matmul(np.matmul(G, np.matmul(Q, x)), y.T) + np.matmul(np.matmul(G, np.matmul(Q, y)), x.T)
-    df = lambda x, y : (-1 / (-ip(x, y) + np.sqrt(ip(x, y) ** 2 - 1)) ** 2) * (-1 + (ip(x, y) / np.sqrt(ip(x, y) ** 2 - 1))) * (dz(x, y))
-
-    total = 0
-    for edge in S:
-        x = edge[0]
-        y = edge[1]
-        num = df(x, y)
-
-        denom = 0
-        samples = Negatives(x, NEGATIVES)
-        for sample in samples:
-            denom += df(sample[0], sample[1])
-
-        total += num / denom
-
-    return total
-
 def learn_distance(x, y, Q, samples=100, segments=7):
     def integrand(t, x, y, Q):
         Pth = (1 - t) * x + (y * t)
@@ -211,25 +174,18 @@ def learn_distance(x, y, Q, samples=100, segments=7):
         dn = 1 + np.matmul(Pth.T, Pth)
 
         return np.sqrt( ip - (nm**2 / dn) )
-#### PERHAPS SWITCH TO EUCLIDEAN DISTANCE FOR TESTING PURPOSES?? IGNORE Q
-#### in distance calculation
 
     x = x[1:]
     y = y[1:]
     path_segments = []
     for i in range(segments):
         path_segments.append((i / (segments-1) * (y - x)) + x)
-### DO RANOMISH INITIALIZATION RATHER THAN LINSPACE INITIALIZATION?  SO THAT WE CAN RECOVER BACK
-### STRAIGHT LINE BACK (IE DONT START WITH STRAIGHT LINE)
-### ONE WAY IS TO ADD RANDOM JITTER TO EACH SEGMENT INITIALLY
 
     convergence = True
 
     while convergence is True:
         convergence = False
 
-        # make sure this loop goes  length(path_segments) -2 stimes  idx=1 to idx=length(path_segments)-2 (inclusive)
-        # this is what is happening
         for idx, segment in enumerate(path_segments[1:-1]):
             i = idx + 1
             this_point = segment
@@ -237,9 +193,7 @@ def learn_distance(x, y, Q, samples=100, segments=7):
             next_point = path_segments[i+1]
 
             sample_radius = max(np.linalg.norm(this_point - prev_point), np.linalg.norm(this_point - next_point))
-            #sample_radius = max(np.linalg.norm(segment - path_segments[idx-1]), np.linalg.norm(segment - path_segments[idx+1])) / 2
 
-            # Generate random vectors and normalize them
             s = np.random.uniform(-sample_radius,sample_radius,size=(samples, DIMENSION))
 
 
@@ -256,11 +210,10 @@ def learn_distance(x, y, Q, samples=100, segments=7):
             # D2 = dhyp(this_point_hyp, next_point_hyp)
 
             min_dist = D1+D2
-            best_sample = this_point  # maybe nan?
+            best_sample = this_point
             for sample in s:
                 # Add sample to current point
                 sample = sample + this_point
-                # Check distance on manifold from current point to sample point
 
 
                 D1 = quad(integrand, 0, 1, args=(prev_point, sample, Q))[0]
@@ -277,13 +230,6 @@ def learn_distance(x, y, Q, samples=100, segments=7):
                     min_dist = Distance
                     best_sample = sample
 
-                    # total_distance = 0
-                    # for ti in range(len(path_segments[:-1])):
-                    #     tdist = quad(integrand, 0, 1, args=(path_segments[ti], path_segments[ti+1], Q))[0]
-                    #     total_distance += tdist
-                    # print('>>>>' + str(total_distance))
-
-
             if np.linalg.norm(this_point - best_sample) < 10e-6:
                 path_segments[i] = best_sample
             else:
@@ -292,8 +238,6 @@ def learn_distance(x, y, Q, samples=100, segments=7):
 
     # while loop ends
 
-    # print(path_segments)
-
     total_distance = 0
     for idx in range(len(path_segments[:-1])):
         Distance = quad(integrand, 0, 1, args=(path_segments[idx], path_segments[idx+1], Q))[0]
@@ -301,6 +245,7 @@ def learn_distance(x, y, Q, samples=100, segments=7):
 
     return total_distance
 
+# Straight line approximation
 def compute_distance(x, y, Q):
     x = x[1:]
     y = y[1:]
@@ -317,79 +262,99 @@ def compute_distance(x, y, Q):
     Distance = quad(integrand, 0, 1, args=(x, y, Q))
     return Distance[0]
 
-def grad_distance(x, y, Q):
-    x = x[1:]
-    y = y[1:]
-    def integrand(t, x, y, Q):
-        A = (1 - t) * x + y * t
-        ip = lambda x, y : np.matmul((y-x).T, np.matmul(Q.T, np.matmul(Q, y-x)))
-        nm = lambda x, y : np.matmul(A.T, x-y)
-        dn = lambda x, y : 1 + np.matmul(A.T, A)
+# def mfd_dist(x, y):
+#     return dhyp(x, y)
 
-        dz = 1. / ( 2 * (np.sqrt( ip(x, y) - (nm(x,y) ** 2 / dn(x, y)) )) )
-        df = 2 * np.matmul(np.matmul(Q, x-y), (x-y).T)
-
-        return dz * df
-
-    grad_Distance = quad(integrand, 0, 1, args=(x, y, Q))
-    return grad_Distance[0] # returns a n x n matrix
-
-def Loss2(Q):
+def mmc_Loss(Q, reg, mfd_dist):
     Q = Q.reshape(DIMENSION, DIMENSION)
-    print(Q)
     total = 0
     for edge in S:
-        x = edge[0]
-        y = edge[1]
-        dQ = learn_distance(x, y, Q)
-
-        total += dQ
+        Qx = np.matmul(Q, edge[0][1:])
+        Qy = np.matmul(Q, edge[1][1:])
+        dQ = mfd_dist(Qx, Qy)
+        total += (1 - reg) * dQ
 
     for edge in D:
-        x = edge[0]
-        y = edge[1]
-        dQ = learn_distance(x, y, Q)
-
-        total -= dQ
+        Qx = np.matmul(Q, edge[0][1:])
+        Qy = np.matmul(Q, edge[1][1:])
+        dQ = mfd_dist(Qx, Qy)
+        total -= reg * dQ
 
     return total
 
-def gradL2(Q):
+
+def sim(x, Q, r):
+    neighbors = []
+    for edge in S:
+        w = x == edge[0][1:]
+        v = x == edge[1][1:]
+        Qx = np.matmul(Q, x)
+        if w.all():
+            Qy = np.matmul(Q, edge[1][1:])
+            if np.linalg.norm(Qx - Qy) < r:
+                neighbors.append(Qy)
+        elif v.all():
+            Qy = np.matmul(Q, edge[0][1:])
+            if np.linalg.norm(Qx - Qy) < r:
+                neighbors.append(Qy)
+        else:
+            pass
+
+    return neighbors
+
+def impostor(x, Q, r):
+    impostors = []
+    for edge in D:
+        w = x == edge[0][1:]
+        v = x == edge[1][1:]
+        Qx = np.matmul(Q, x)
+        if w.all():
+            Qy = np.matmul(Q, edge[1][1:])
+            if np.linalg.norm(Qx - Qy) < r:
+                impostors.append(Qy)
+        elif v.all():
+            Qy = np.matmul(Q, edge[0][1:])
+            if np.linalg.norm(Qx - Qy) < r:
+                impostors.append(Qy)
+        else:
+            pass
+
+    return impostors
+
+def mfd(x):
+    return np.concatenate(([np.sqrt(1 - np.matmul(x.T, x))], x))
+
+def lmnn_Loss(Q, radius, reg, mfd_dist):
     Q = Q.reshape(DIMENSION, DIMENSION)
     total = 0
-    for edge in S:
-        x = edge[0]
-        y = edge[1]
-        dQ = grad_distance(x, y, Q)
+    for x in B:
+        x = x[1:]
+        Qx = np.matmul(Q, x)
+        Qx = mfd(Qx)
+        for Qy in sim(x, Q, radius):
+            Qy = mfd(Qy)
+            total += (1 - reg) * mfd_dist(Qx, Qy)
 
-        total += dQ
-
-    for edge in D:
-        x = edge[0]
-        y = edge[1]
-        dQ = grad_distance(x, y, Q)
-
-        total -= dQ
+    for x in B:
+        x = x[1:]
+        Qx = np.matmul(Q, x)
+        mQx = mfd(Qx)
+        for Qy in sim(x, Q, radius):
+            mQy = mfd(Qy)
+            for Qz in impostor(x, Q, radius):
+                mQz = mfd(Qz)
+                if np.linalg.norm(Qx - Qz) < np.linalg.norm(Qx - Qy):
+                    total += reg * (1 + mfd_dist(mQx, mQy) - mfd_dist(mQx, mQz))
 
     return total
 
 Q0 = np.diag([1 for _ in range(DIMENSION)])
 # Q0 = minkowski_metric_tensor
 
-new_x = np.array([np.sqrt(9), 2, 2])
-new_y = np.array([np.sqrt(9), -2, 2])
-
-# print (learn_distance(new_x, new_y, Q0, 1000, 7))
-# print (dhyp(new_x, new_y))
-# print (compute_distance(new_x, new_y, Q0))
-
-# print (learn_distance(S[0][0], S[0][1], Q0, 1000, 7))
-# print (compute_distance(S[0][0], S[0][1], Q0))
-
 # res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
 # print(res_NelderMead)
 
-res_BFGS = minimize(Loss2, Q0, method='BFGS', options={'disp': True})
+res_BFGS = minimize(lmnn_Loss, Q0, args=(1, 0.5, dhyp), method='BFGS', options={'disp': True})
 print(res_BFGS)
 
 # ----------------------------------------------------------------------------------------------------
