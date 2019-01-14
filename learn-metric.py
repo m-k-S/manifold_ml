@@ -30,8 +30,18 @@ import matlab.engine
 # print(Labels)
 # print(Edges)
 
+polblogs1 = scipy.io.loadmat('./data/realnet/polbooks_data_1_edges.mat')
+intEdges = polblogs1['edges']  ##
+
+Edges = [[str(i) for i in Edge] for Edge in intEdges]
+
+# print(Edges)
+Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+
 # ZACHARY'S KARATE CLUB DATASET
 
+'''
 intEdges = [[2, 1], [3, 1], [3, 2],[4, 1], [4, 2], [4, 3],
 [5, 1],
 [6, 1],
@@ -58,6 +68,7 @@ intEdges = [[2, 1], [3, 1], [3, 2],[4, 1], [4, 2], [4, 3],
 
 Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 Edges = [[str(i) for i in Edge] for Edge in intEdges]
+'''
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -75,10 +86,6 @@ DIMENSION = 2
 def plot_embedding(model, labels, title, filename):
     plot = poincare_2d_visualization(model, labels, title)
     py.plot(plot, filename=filename)
-
-# file_path = datapath('')
-# model = PoincareModel(PoincareRelations(file_path), negative=2, size=DIMENSION)
-# model.train(epochs=50)
 
 '''
 # REAL DATA
@@ -104,8 +111,14 @@ plot_embedding(model, edges, "Test Graph", "test14")
 # DEAR LORD! TOO MUCH MAGIC!
 
 # model = PoincareModel(Edges, negative=10, size=DIMENSION)
-# model.train(epochs=600)
+# model.train(epochs=50)
 # plot_embedding(model, Edges, "Test Graph", "Test 20")
+
+
+import julia
+j = julia.Julia()
+h_mds = j.include('hmds.jl')
+model = h_mds(intEdges, 2, None, 1e-5)
 
 # Parameters:
 #   n x D matrix B (n points, D dimension) [ie transposed]
@@ -124,9 +137,11 @@ def b2h_Vector(v):
     x = np.multiply(v, x0 + 1)
     return np.hstack((x0, x))
 
-# B = model.kv.vectors
-# B = b2h_Matrix(B)
-# print(B)
+B = model.kv.vectors
+B = b2h_Matrix(B)
+print(B)
+
+scipy.io.savemat('polblogs_hyp.mat', mdict = {'arr': B})
 
 # B = [np.asarray(i[1:]) for i in B]
 
@@ -182,6 +197,8 @@ for i in range(34):
 print(discrete_metric)
 MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
 graph_embedded = MDS_embedding.fit_transform(discrete_metric)
+scipy.io.savemat('polblogs_euc.mat', mdict = {'arr': graph_embedded})
+
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -314,8 +331,6 @@ def assign_k_random_points_from_fqb(FQB, k):
         selection.append(random.choice(FQB))
     return selection
 
-###########################################################################################
-
 def kmeans_randomly_partition_data(FQB, k):
     assigned_labels = []
     for _ in FQB:
@@ -325,8 +340,6 @@ def kmeans_randomly_partition_data(FQB, k):
 
 
 ###########################################################################################
-
-
 #def kmeans_swap_cost(FQB, assigned_labels, current_cost, idxx, proposed_label_x, mfd_dist_generic):
 #    new_cost = current_cost
 #
@@ -390,15 +403,12 @@ Q0 = np.diag([1 for _ in range(DIMENSION)])
 
 # res_BFGS = minimize(lmnn_Loss, Q0, args=(100, 1, 0.01, deuc), method='BFGS', options={'disp': True})
 # print(res_BFGS)
-# FOR TESTING PURPOSES CALL THE EUCLI
 
 # res_Powell = minimize(lmnn_loss_generic, Q0, args=(100, 5, 0.5, hyp_mfd, hyp_mfd_dist, B, Labels), method='Powell', options={'disp': True})
 # print(res_Powell)
 
 sq_euclid_mfd_dist = lambda x, y : np.linalg.norm(x - y) ** 2
 # Centers = kmeans_generic(map_dataset_to_mfd(B, Q0, euclid_mfd), 3, sq_euclid_mfd_dist)
-
-
 
 # res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, euclid_mfd, euclid_mfd_dist, B, Labels), method='Powell', options={'disp': True})
 # Qnew = res_Powell.x.reshape(DIMENSION, DIMENSION)
@@ -411,7 +421,7 @@ sq_euclid_mfd_dist = lambda x, y : np.linalg.norm(x - y) ** 2
 #
 # ----------------------------------------------------------------------------------------------------
 
-Initial_Data = B
+# Initial_Data = B
 
 
 # ----------------------------------------------------------------------------------------------------
