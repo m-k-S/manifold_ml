@@ -30,10 +30,16 @@ import matlab.engine
 # print(Labels)
 # print(Edges)
 
-polblogs1 = scipy.io.loadmat('./data/realnet/polbooks_data_1_edges.mat')
+polblogs1 = scipy.io.loadmat('./data/realnet/football_data_1_edges.mat')
 intEdges = polblogs1['edges']  ##
 
 Edges = [[str(i) for i in Edge] for Edge in intEdges]
+
+max_size = 0
+for Edge in intEdges.tolist():
+    for i in Edge:
+        if i > max_size:
+            max_size = i
 
 # print(Edges)
 Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -42,30 +48,6 @@ Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1
 # ZACHARY'S KARATE CLUB DATASET
 
 '''
-intEdges = [[2, 1], [3, 1], [3, 2],[4, 1], [4, 2], [4, 3],
-[5, 1],
-[6, 1],
-[7, 1], [7, 5], [7, 6],
-[8, 1], [8, 2], [8, 3], [8, 4],
-[9, 1], [9, 3],
-[10, 3],
-[11, 1], [11, 5], [11, 6],
-[12, 1],
-[13, 1], [13, 4],
-[14, 1], [14, 2], [14, 3], [14, 4],
-[17, 6], [17, 7],
-[18, 1], [18, 2],
-[20, 1], [20, 2],
-[22, 1], [22, 2],
-[26, 24], [26, 25],
-[28, 3], [28, 24], [28, 25],
-[29, 3],
-[30, 24], [30, 27],
-[31, 2], [31, 9],
-[32, 1], [32, 25], [32, 26], [32, 29],
-[33, 3], [33, 9], [33, 15], [33, 16], [33, 19], [33, 21], [33, 23], [33, 24], [33, 30], [33, 31], [33, 32],
-[34, 9], [34, 10], [34, 14], [34, 15], [34,16], [34, 19], [34, 20], [34, 21], [34, 23], [34, 24], [34, 27], [34, 28], [34, 29], [34, 30], [34, 31], [34, 32], [34, 33]]
-
 Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 Edges = [[str(i) for i in Edge] for Edge in intEdges]
 '''
@@ -115,10 +97,7 @@ plot_embedding(model, edges, "Test Graph", "test14")
 # plot_embedding(model, Edges, "Test Graph", "Test 20")
 
 
-import julia
-j = julia.Julia()
-h_mds = j.include('hmds.jl')
-model = h_mds(intEdges, 2, None, 1e-5)
+
 
 # Parameters:
 #   n x D matrix B (n points, D dimension) [ie transposed]
@@ -137,11 +116,11 @@ def b2h_Vector(v):
     x = np.multiply(v, x0 + 1)
     return np.hstack((x0, x))
 
-B = model.kv.vectors
-B = b2h_Matrix(B)
-print(B)
+# B = model.kv.vectors
+# B = b2h_Matrix(B)
+# print(B)
 
-scipy.io.savemat('polblogs_hyp.mat', mdict = {'arr': B})
+# scipy.io.savemat('polblogs_hyp.mat', mdict = {'arr': B})
 
 # B = [np.asarray(i[1:]) for i in B]
 
@@ -187,17 +166,41 @@ dhyp = lambda x, y : np.arccosh(-lip(x, y))
 
 from sklearn.manifold import MDS
 import networkx as nx
+import time
+
 
 G = nx.Graph()
-G.add_edges_from(intEdges)
-discrete_metric = [[0 for _ in range(34)] for _ in range(34)]
-for i in range(34):
-    for j in range(34):
-        discrete_metric[i][j] = len(nx.shortest_path(G, i+1, j+1))
-print(discrete_metric)
-MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
-graph_embedded = MDS_embedding.fit_transform(discrete_metric)
-scipy.io.savemat('polblogs_euc.mat', mdict = {'arr': graph_embedded})
+G.add_edges_from(intEdges.tolist())
+max_size = G.order()
+discrete_metric = [[0 for _ in range(max_size)] for _ in range(max_size)]
+for i in range(max_size):
+    for j in range(max_size):
+        try:
+            discrete_metric[i][j] = len(nx.shortest_path(G, i+1, j+1)) - 1
+        except nx.exception.NetworkXNoPath:
+            discrete_metric[i][j] = 50
+
+# MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
+# graph_embedded = MDS_embedding.fit_transform(discrete_metric)
+# scipy.io.savemat('polblogs_euc.mat', mdict = {'arr': graph_embedded})
+
+# print(discrete_metric)
+
+# hMDSEdges = []
+# for Edge in intEdges.tolist():
+#     hMDSEdges.append(str(Edge[0]) + " " + str(Edge[1]))
+# print(hMDSEdges)
+
+# print(hMDS_mat)
+
+
+# model = matlab.hmds(discrete_metric, 2, 10, 1e-5)
+# model = b2h_Matrix(np.asarray(model))
+# model = h_mds(hMDS_mat, 2, 10, 1e-5)
+
+# print(model)
+
+# scipy.io.savemat('karate_hmds.mat', mdict = {'arr': model})
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -389,6 +392,40 @@ def kmeans_generic(FQB, k, mfd_dist_generic):
 
     return assigned_labels
 
+
+###########################################################################################
+###########################################################################################
+###########################################################################################
+
+####  MDS CODE
+def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic):
+    # Dist is a symmetric npts x npts  distance matrix
+    # we are optimizing over location of the points in the base space B
+
+    B = B.reshape(npts, dim)  # datapoints in base space B,  B is the variable of optimization
+    I = np.diag([1 for _ in range(dim)])  # dim x dim identity matrix
+
+    FB = map_dataset_to_mfd(B, I, mfd_generic)
+
+    loss = 0
+    for i in range(npts):
+        for j in range(i-1):  # traverse the upper triangular matrix
+            loss += (mfd_dist_generic(FB[i], FB[j]) - Dist[i][j])**2  # **2 is supposed to be squared CHECK SYNTAX
+
+    return loss
+
+def mds_initialization(npts, dim):
+    pts = []
+    mean = np.zeros(dim)
+    cov = np.diag(mean)
+    for i in range(npts):
+        pts.append(np.random.multivariate_normal(mean, cov))
+
+    return np.asarray(pts)
+
+B0 = mds_initialization(max_size, DIMENSION)
+mds_Powell = minimize(mds_loss, B0, args=(max_size, DIMENSION, discrete_metric, hyp_mfd, hyp_mfd_dist), method='Powell', options={'disp': True})
+print(mds_Powell)
 
 ###########################################################################################
 ###########################################################################################

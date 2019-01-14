@@ -1,10 +1,14 @@
 using PyCall
+using LinearAlgebra
+
+
 @pyimport numpy as np
 @pyimport networkx as nx
 @pyimport scipy.sparse.csgraph as csg
 
 function power_method(A,d,tol;verbose=false, T=1000)
     (n,n) = size(A)
+    print("break1")
     x_all = qr(randn(n,d))[1]
     _eig  = zeros(d)
     if verbose
