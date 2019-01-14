@@ -30,6 +30,35 @@ import matlab.engine
 # print(Labels)
 # print(Edges)
 
+# ZACHARY'S KARATE CLUB DATASET
+
+intEdges = [[2, 1], [3, 1], [3, 2],[4, 1], [4, 2], [4, 3],
+[5, 1],
+[6, 1],
+[7, 1], [7, 5], [7, 6],
+[8, 1], [8, 2], [8, 3], [8, 4],
+[9, 1], [9, 3],
+[10, 3],
+[11, 1], [11, 5], [11, 6],
+[12, 1],
+[13, 1], [13, 4],
+[14, 1], [14, 2], [14, 3], [14, 4],
+[17, 6], [17, 7],
+[18, 1], [18, 2],
+[20, 1], [20, 2],
+[22, 1], [22, 2],
+[26, 24], [26, 25],
+[28, 3], [28, 24], [28, 25],
+[29, 3],
+[30, 24], [30, 27],
+[31, 2], [31, 9],
+[32, 1], [32, 25], [32, 26], [32, 29],
+[33, 3], [33, 9], [33, 15], [33, 16], [33, 19], [33, 21], [33, 23], [33, 24], [33, 30], [33, 31], [33, 32],
+[34, 9], [34, 10], [34, 14], [34, 15], [34,16], [34, 19], [34, 20], [34, 21], [34, 23], [34, 24], [34, 27], [34, 28], [34, 29], [34, 30], [34, 31], [34, 32], [34, 33]]
+
+Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+Edges = [[str(i) for i in Edge] for Edge in intEdges]
+
 # ----------------------------------------------------------------------------------------------------
 #
 # POINCARE EMBEDDING (AND CONVERSION TO HYPERBOLOID)
@@ -73,34 +102,9 @@ plot_embedding(model, edges, "Test Graph", "test14")
 
 '''
 # DEAR LORD! TOO MUCH MAGIC!
-Edges = [[2, 1], [3, 1], [3, 2],[4, 1], [4, 2], [4, 3],
-[5, 1],
-[6, 1],
-[7, 1], [7, 5], [7, 6],
-[8, 1], [8, 2], [8, 3], [8, 4],
-[9, 1], [9, 3],
-[10, 3],
-[11, 1], [11, 5], [11, 6],
-[12, 1],
-[13, 1], [13, 4],
-[14, 1], [14, 2], [14, 3], [14, 4],
-[17, 6], [17, 7],
-[18, 1], [18, 2],
-[20, 1], [20, 2],
-[22, 1], [22, 2],
-[26, 24], [26, 25],
-[28, 3], [28, 24], [28, 25],
-[29, 3],
-[30, 24], [30, 27],
-[31, 2], [31, 9],
-[32, 1], [32, 25], [32, 26], [32, 29],
-[33, 3], [33, 9], [33, 15], [33, 16], [33, 19], [33, 21], [33, 23], [33, 24], [33, 30], [33, 31], [33, 32],
-[34, 9], [34, 10], [34, 14], [34, 15], [34,16], [34, 19], [34, 20], [34, 21], [34, 23], [34, 24], [34, 27], [34, 28], [34, 29], [34, 30], [34, 31], [34, 32], [34, 33]]
 
-Edges = [[str(i) for i in Edge] for Edge in Edges]
-
-model = PoincareModel(Edges, negative=10, size=DIMENSION)
-model.train(epochs=600)
+# model = PoincareModel(Edges, negative=10, size=DIMENSION)
+# model.train(epochs=600)
 # plot_embedding(model, Edges, "Test Graph", "Test 20")
 
 # Parameters:
@@ -120,27 +124,11 @@ def b2h_Vector(v):
     x = np.multiply(v, x0 + 1)
     return np.hstack((x0, x))
 
-B = model.kv.vectors
-B = b2h_Matrix(B)
-print(B)
+# B = model.kv.vectors
+# B = b2h_Matrix(B)
+# print(B)
 
-# B = [[0, 1, 0], [0, 0, 1], [0, -1, 0], [0, 0, 0], [0, 0, -1]]
-# B = [[0, 0, 1], [0, 0, 0], [0, 0, -1], [0, 1, 1], [0, 1, 0], [0, 1, -1]]
-# B = [[0, 1, 1], [0, 1, 0], [0, 1, -1]]
-# B = [[0,1], [0,0], [0,-1], [1,1], [1, 0], [1,-1]]
 # B = [np.asarray(i[1:]) for i in B]
-# Labels = [0, 1, 0, 1, 1]
-Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-# Labels = [1, 1, 1]
-
-# V = {}
-# for i in range(1, len(Labels) + 1):
-#     vector = model.kv.__getitem__(str(i))
-#     vector = b2h_Vector(vector)
-#     V[str(i)] = vector
-#
-# print(V)
-
 
 S_Labels = []
 D_Labels = []
@@ -162,12 +150,6 @@ S = []
     # S.append([x, y])
     # S.append([B[edge[0]], B[edge[1]]])
 
-# print ("DISTANCE BTWN PAIR 1: " + str(model.kv.distance(S_Labels[0][0], S_Labels[0][1])))
-
-lip = lambda x, y : -x[0] * y[0] + sum([x[i] * y[i] for i in range(1, len(x))])
-dhyp = lambda x, y : np.arccosh(-lip(x, y))
-# print ("sanity check - dist on hyperboloid btwn pair 1 is: " + str(dhyp(S[0][0], S[0][1])))
-
 D = []
 # for edge in D_Labels:
     # x = b2h_Vector(model.kv.__getitem__(edge[0]))
@@ -175,13 +157,31 @@ D = []
     # D.append([x, y])
     # D.append([B[edge[0]], B[edge[1]]])
 
-# S = [[B[0], B[2]], [B[1], B[3]], [B[1], B[4]], [B[3], B[4]]]
-# D = [[B[0], B[1]], [B[0], B[3]], [B[0], B[4]], [B[2], B[1]], [B[2], B[3]], [B[2], B[4]]]
 
-# S = [[B[0], B[1]], [B[0], B[2]], [B[1], B[2]], [B[3], B[4]], [B[3], B[5]], [B[4], B[5]]]
-# S = [[B[0], B[1]], [B[0], B[2]], [B[1], B[2]]]
-# D = [[B[0], B[3]], [B[0], B[4]], [B[0], B[5]], [B[1], B[3]], [B[1], B[4]], [B[1], B[5]], [B[2], B[3]], [B[2], B[4]], [B[2], B[5]]]
+lip = lambda x, y : -x[0] * y[0] + sum([x[i] * y[i] for i in range(1, len(x))])
+dhyp = lambda x, y : np.arccosh(-lip(x, y))
 
+# print ("Distance between pair 1 on Poincare ball: " + str(model.kv.distance(S_Labels[0][0], S_Labels[0][1])))
+# print ("Distance between pair 1 on hyperboloid: " + str(dhyp(S[0][0], S[0][1])))
+
+# ----------------------------------------------------------------------------------------------------
+#
+# EUCLIDEAN MDS FOR COMPARISON
+#
+# ----------------------------------------------------------------------------------------------------
+
+from sklearn.manifold import MDS
+import networkx as nx
+
+G = nx.Graph()
+G.add_edges_from(intEdges)
+discrete_metric = [[0 for _ in range(34)] for _ in range(34)]
+for i in range(34):
+    for j in range(34):
+        discrete_metric[i][j] = len(nx.shortest_path(G, i+1, j+1))
+print(discrete_metric)
+MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
+graph_embedded = MDS_embedding.fit_transform(discrete_metric)
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -305,10 +305,7 @@ def mmc_loss_generic(Q, reg, mfd_generic, mfd_dist_generic, B, labels):
 
 ###########################################################################################
 ###########################################################################################
-###########################################################################################
-###########################################################################################
-########################################################################################3
-#########################################################################################
+
 import random
 
 def assign_k_random_points_from_fqb(FQB, k):
