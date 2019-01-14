@@ -52,7 +52,7 @@ def plot_embedding(model, labels, title, filename):
 # model.train(epochs=50)
 
 '''
-REAL DATA
+# REAL DATA
 
 # polblogs1 = scipy.io.loadmat('./data/realnet/polblogs_data_1.mat')
 # print(polblogs1.keys())
@@ -72,9 +72,35 @@ model.train(epochs=200)
 plot_embedding(model, edges, "Test Graph", "test14")
 
 '''
+# DEAR LORD! TOO MUCH MAGIC!
+Edges = [[2, 1], [3, 1], [3, 2],[4, 1], [4, 2], [4, 3],
+[5, 1],
+[6, 1],
+[7, 1], [7, 5], [7, 6],
+[8, 1], [8, 2], [8, 3], [8, 4],
+[9, 1], [9, 3],
+[10, 3],
+[11, 1], [11, 5], [11, 6],
+[12, 1],
+[13, 1], [13, 4],
+[14, 1], [14, 2], [14, 3], [14, 4],
+[17, 6], [17, 7],
+[18, 1], [18, 2],
+[20, 1], [20, 2],
+[22, 1], [22, 2],
+[26, 24], [26, 25],
+[28, 3], [28, 24], [28, 25],
+[29, 3],
+[30, 24], [30, 27],
+[31, 2], [31, 9],
+[32, 1], [32, 25], [32, 26], [32, 29],
+[33, 3], [33, 9], [33, 15], [33, 16], [33, 19], [33, 21], [33, 23], [33, 24], [33, 30], [33, 31], [33, 32],
+[34, 9], [34, 10], [34, 14], [34, 15], [34,16], [34, 19], [34, 20], [34, 21], [34, 23], [34, 24], [34, 27], [34, 28], [34, 29], [34, 30], [34, 31], [34, 32], [34, 33]]
 
-# model = PoincareModel(Edges, negative=10, size=DIMENSION)
-# model.train(epochs=600)
+Edges = [[str(i) for i in Edge] for Edge in Edges]
+
+model = PoincareModel(Edges, negative=10, size=DIMENSION)
+model.train(epochs=600)
 # plot_embedding(model, Edges, "Test Graph", "Test 20")
 
 # Parameters:
@@ -94,16 +120,17 @@ def b2h_Vector(v):
     x = np.multiply(v, x0 + 1)
     return np.hstack((x0, x))
 
-# B = model.kv.vectors
-# B = b2h_Matrix(B)
+B = model.kv.vectors
+B = b2h_Matrix(B)
+print(B)
 
 # B = [[0, 1, 0], [0, 0, 1], [0, -1, 0], [0, 0, 0], [0, 0, -1]]
-B = [[0, 0, 1], [0, 0, 0], [0, 0, -1], [0, 1, 1], [0, 1, 0], [0, 1, -1]]
+# B = [[0, 0, 1], [0, 0, 0], [0, 0, -1], [0, 1, 1], [0, 1, 0], [0, 1, -1]]
 # B = [[0, 1, 1], [0, 1, 0], [0, 1, -1]]
 # B = [[0,1], [0,0], [0,-1], [1,1], [1, 0], [1,-1]]
-B = [np.asarray(i[1:]) for i in B]
+# B = [np.asarray(i[1:]) for i in B]
 # Labels = [0, 1, 0, 1, 1]
-Labels = [1, 1, 1, 0, 0, 0]
+Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 # Labels = [1, 1, 1]
 
 # V = {}
@@ -151,9 +178,9 @@ D = []
 # S = [[B[0], B[2]], [B[1], B[3]], [B[1], B[4]], [B[3], B[4]]]
 # D = [[B[0], B[1]], [B[0], B[3]], [B[0], B[4]], [B[2], B[1]], [B[2], B[3]], [B[2], B[4]]]
 
-S = [[B[0], B[1]], [B[0], B[2]], [B[1], B[2]], [B[3], B[4]], [B[3], B[5]], [B[4], B[5]]]
+# S = [[B[0], B[1]], [B[0], B[2]], [B[1], B[2]], [B[3], B[4]], [B[3], B[5]], [B[4], B[5]]]
 # S = [[B[0], B[1]], [B[0], B[2]], [B[1], B[2]]]
-D = [[B[0], B[3]], [B[0], B[4]], [B[0], B[5]], [B[1], B[3]], [B[1], B[4]], [B[1], B[5]], [B[2], B[3]], [B[2], B[4]], [B[2], B[5]]]
+# D = [[B[0], B[3]], [B[0], B[4]], [B[0], B[5]], [B[1], B[3]], [B[1], B[4]], [B[1], B[5]], [B[2], B[3]], [B[2], B[4]], [B[2], B[5]]]
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -168,191 +195,6 @@ from scipy.integrate import quad
 minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
 minkowski_diagonal[0] = -1
 minkowski_metric_tensor = np.diag(minkowski_diagonal)
-
-def Negatives(x, n):
-    samples = []
-    for edge in D:
-        w = x == edge[0]
-        v = x == edge[1]
-        if w.all() or v.all():
-            samples.append(edge)
-        if len(samples) == n:
-            break
-
-    return samples
-
-NEGATIVES = 5
-
-def learn_distance(x, y, Q, samples=100, segments=7):
-    def integrand(t, x, y, Q):
-        Pth = (1 - t) * x + (y * t)
-        Dff = y-x
-        ip = np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
-        nm = np.matmul(Pth.T, Dff)
-        dn = 1 + np.matmul(Pth.T, Pth)
-
-        return np.sqrt( ip - (nm**2 / dn) )
-
-    x = x[1:]
-    y = y[1:]
-    path_segments = []
-    for i in range(segments):
-        path_segments.append((i / (segments-1) * (y - x)) + x)
-
-    convergence = True
-
-    while convergence is True:
-        convergence = False
-
-        for idx, segment in enumerate(path_segments[1:-1]):
-            i = idx + 1
-            this_point = segment
-            prev_point = path_segments[i-1]
-            next_point = path_segments[i+1]
-
-            sample_radius = max(np.linalg.norm(this_point - prev_point), np.linalg.norm(this_point - next_point))
-
-            s = np.random.uniform(-sample_radius,sample_radius,size=(samples, DIMENSION))
-
-
-            D1 = quad(integrand, 0, 1, args=(prev_point, this_point, Q))[0]
-            D2 = quad(integrand, 0, 1, args=(this_point, next_point, Q))[0]
-
-            # this_point_x0 = np.sqrt(1 + np.dot(this_point.T, this_point))
-            # next_point_x0 = np.sqrt(1 + np.dot(next_point.T, next_point))
-            # prev_point_x0 = np.sqrt(1 + np.dot(prev_point.T, prev_point))
-            # this_point_hyp = [this_point_x0, this_point[0], this_point[1]]
-            # next_point_hyp = [next_point_x0, next_point[0], next_point[1]]
-            # prev_point_hyp = [prev_point_x0, prev_point[0], prev_point[1]]
-            # D1 = dhyp(prev_point_hyp, this_point_hyp)
-            # D2 = dhyp(this_point_hyp, next_point_hyp)
-
-            min_dist = D1+D2
-            best_sample = this_point
-            for sample in s:
-                # Add sample to current point
-                sample = sample + this_point
-
-
-                D1 = quad(integrand, 0, 1, args=(prev_point, sample, Q))[0]
-                D2 = quad(integrand, 0, 1, args=(sample, next_point, Q))[0]
-
-                # sample_x0 = np.sqrt(1 + np.dot(sample.T, sample))
-                # sample_hyp = [sample_x0, sample[0], sample[1]]
-
-                # D1 = dhyp(prev_point_hyp, sample_hyp)
-                # D2 = dhyp(sample_hyp, next_point_hyp)
-
-                Distance = D1 + D2
-                if Distance < min_dist:
-                    min_dist = Distance
-                    best_sample = sample
-
-            if np.linalg.norm(this_point - best_sample) < 10e-6:
-                path_segments[i] = best_sample
-            else:
-                convergence = True
-                path_segments[i] = best_sample
-
-    # while loop ends
-
-    total_distance = 0
-    for idx in range(len(path_segments[:-1])):
-        Distance = quad(integrand, 0, 1, args=(path_segments[idx], path_segments[idx+1], Q))[0]
-        total_distance += Distance
-
-    return total_distance
-
-# Straight line approximation
-def compute_distance(x, y, Q):
-    x = x[1:]
-    y = y[1:]
-    def integrand(t, x, y, Q):
-        Pth = (1 - t) * x + y * t
-        Dff = y-x
-        ip = lambda x, y : np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
-        nm = lambda x, y : np.matmul(Pth.T, Dff)
-        dn = lambda x, y : 1 + np.matmul(Pth.T, Pth)
-
-        # print (ip(x, y) + (nm(x,y) ** 2 / dn(x, y)))
-        return np.sqrt( ip(x, y) - (nm(x,y)**2 / dn(x, y)) )
-
-    Distance = quad(integrand, 0, 1, args=(x, y, Q))
-    return Distance[0]
-
-# def mfd_dist(x, y):
-#     return dhyp(x, y)
-
-def mmc_Loss(Q, reg, mfd_dist):
-    Q = Q.reshape(DIMENSION, DIMENSION)
-    total = 0
-    for edge in S:
-        Qx = np.matmul(Q, edge[0][1:])
-        Qy = np.matmul(Q, edge[1][1:])
-        dQ = mfd_dist(Qx, Qy)
-        total += (1 - reg) * dQ
-
-    for edge in D:
-        Qx = np.matmul(Q, edge[0][1:])
-        Qy = np.matmul(Q, edge[1][1:])
-        dQ = mfd_dist(Qx, Qy)
-        total -= reg * dQ
-
-    return total
-
-
-def sim(x, Q, r, k):
-    neighbors = []
-    for edge in S:
-        w = x == edge[0][1:]
-        v = x == edge[1][1:]
-        # w = x == edge[0]
-        # v = x == edge[1]
-        Qx = np.matmul(Q, x)
-        if w.all():
-            Qy = np.matmul(Q, edge[1][1:])
-            # Qy = np.matmul(Q, edge[1])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                neighbors.append(Qy)
-        elif v.all():
-            Qy = np.matmul(Q, edge[0][1:])
-            # Qy = np.matmul(Q, edge[0])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                neighbors.append(Qy)
-        else:
-            pass
-
-    return neighbors
-
-def impostor(x, Q, r):
-    impostors = []
-    for edge in D:
-        w = x == edge[0][1:]
-        v = x == edge[1][1:]
-        # w = x == edge[0]
-        # v = x == edge[1]
-        Qx = np.matmul(Q, x)
-        if w.all():
-            Qy = np.matmul(Q, edge[1][1:])
-            # Qy = np.matmul(Q, edge[1])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                impostors.append(Qy)
-        elif v.all():
-            Qy = np.matmul(Q, edge[0][1:])
-            # Qy = np.matmul(Q, edge[1])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                impostors.append(Qy)
-        else:
-            pass
-
-    return impostors
-
-def mfd(x):
-    return np.concatenate(([np.sqrt(1 + np.matmul(x.T, x))], x))
-
-# def mfd(x):
-#     return x
-
 
 ##########  FUNCTIONS FOR HYPERBOLIC MANIFOLD ####################################
 def hyp_mfd(x):
@@ -542,30 +384,6 @@ def kmeans_generic(FQB, k, mfd_dist_generic):
 ###########################################################################################
 ###########################################################################################
 
-def lmnn_Loss(Q, radius, k, reg, mfd_dist):
-    Q = Q.reshape(DIMENSION, DIMENSION)
-    print(Q)
-    total = 0
-    for x in B:
-        x = x[1:]
-        Qx = np.matmul(Q, x)
-        Qx = mfd(Qx)
-        for Qy in sim(x, Q, radius, k):
-            Qy = mfd(Qy)
-            total += (1 - reg) * mfd_dist(Qx, Qy)
-
-    for x in B:
-        x = x[1:]
-        Qx = np.matmul(Q, x)
-        mQx = mfd(Qx)
-        for Qy in sim(x, Q, radius, k):
-            mQy = mfd(Qy)
-            for Qz in impostor(x, Q, radius):
-                mQz = mfd(Qz)
-                if np.linalg.norm(Qx - Qz)**2 < np.linalg.norm(Qx - Qy)**2:
-                    total += reg * (1 + mfd_dist(mQx, mQy) - mfd_dist(mQx, mQz))
-
-    return total
 
 Q0 = np.diag([1 for _ in range(DIMENSION)])
 # Q0 = minkowski_metric_tensor
@@ -580,21 +398,9 @@ Q0 = np.diag([1 for _ in range(DIMENSION)])
 # res_Powell = minimize(lmnn_loss_generic, Q0, args=(100, 5, 0.5, hyp_mfd, hyp_mfd_dist, B, Labels), method='Powell', options={'disp': True})
 # print(res_Powell)
 
-AB = np.random.multivariate_normal(np.asarray([-10 for _ in range(2)]), Q0, 50)
-BB = np.random.multivariate_normal(np.asarray([10 for _ in range(2)]), Q0, 50)
-CB = np.random.multivariate_normal(np.asarray([-10, 10]), Q0, 50)
-
-
-B = np.concatenate((AB, BB, CB)).tolist()
-random.shuffle(B)
-B = np.asarray(B)
-print(B)
-
-
 sq_euclid_mfd_dist = lambda x, y : np.linalg.norm(x - y) ** 2
-Centers = kmeans_generic(map_dataset_to_mfd(B, Q0, euclid_mfd), 3, sq_euclid_mfd_dist)
+# Centers = kmeans_generic(map_dataset_to_mfd(B, Q0, euclid_mfd), 3, sq_euclid_mfd_dist)
 
-print(Centers)  # it returns labels (there is no concept of centers), ie assignment to which cluster
 
 
 # res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, euclid_mfd, euclid_mfd_dist, B, Labels), method='Powell', options={'disp': True})
