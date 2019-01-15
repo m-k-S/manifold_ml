@@ -209,7 +209,7 @@ for i in range(max_size):
 #
 # ----------------------------------------------------------------------------------------------------
 
-from scipy.optimize import minimize, NonlinearConstraint
+from scipy.optimize import minimize
 from scipy.integrate import quad
 
 minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
