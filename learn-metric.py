@@ -14,7 +14,7 @@ from config import username, api_key
 import collections
 # import plotly.plotly as py
 # import plotly.graph_objs as go
-import matlab.engine
+# import matlab.engine
 
 # matlab = matlab.engine.start_matlab()
 #
@@ -58,9 +58,9 @@ Edges = [[str(i) for i in Edge] for Edge in intEdges]
 #
 # ----------------------------------------------------------------------------------------------------
 
-from gensim.models.poincare import PoincareModel, PoincareRelations
-from gensim.test.utils import datapath
-from gensim.viz.poincare import poincare_2d_visualization
+# from gensim.models.poincare import PoincareModel, PoincareRelations
+# from gensim.test.utils import datapath
+# from gensim.viz.poincare import poincare_2d_visualization
 from os import getcwd
 
 DIMENSION = 2
