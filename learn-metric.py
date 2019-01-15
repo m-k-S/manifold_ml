@@ -250,17 +250,51 @@ def map_dataset_to_mfd(B, Q, mfd_generic):
     return FQB
 
 def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic):
+#############  CORRECT CODE FOR radius
+#    true_neighbors = []
+#    imposter_neighbors = []
+#
+#    for idx, x in enumerate(FQB):
+#        label_x = labels[idx]
+#        if mfd_dist_generic(FQx, x) < radius:
+#            if label_x == label_of_FQx:
+#                true_neighbors.append(x)
+#            else:
+#                imposter_neighbors.append(x)
+#
+#    return true_neighbors, imposter_neighbors
+
+################ CODE FOR K
+    dst_from_FQx = []
+    for idx, FQxi in enumerate(FQB):
+        dst_from_FQx.append( mfd_dist_generic(FQx, FQxi))
+
+    #sorted_distance = dst_from_FQx
+    #sorted_distance.sort()    # actual sorted distances not needed, so comment?
+    #### sort(dist_from_FQx)   # <<<<<< CHECK SYNTAX!!    MAKE SURE SORT IS IN ASCENDING ORDER
+                                                             # BETTER YET, if there is a way sort returns top k directly, let me know
+
+
+    idx_of_points = np.argsort(np.asarray(dst_from_FQx))  # <<< only need these indices
+
+    #print(FQx)
+    #print(FQB)
+    #print(dst_from_FQx)
+    #print(idx_of_points)
+    #print('-------------------')
     true_neighbors = []
     imposter_neighbors = []
+    for i in range(1,k+1):
+        nidx = idx_of_points[i]      # +1 because ignoring the zero'th index that is supposed to be FQx itself
+        label_nxi = labels[nidx]     # this assumes k < length(FQB)
+        if label_nxi == label_of_FQx:
+            true_neighbors.append(FQB[nidx])
+        else:
+            imposter_neighbors.append(FQB[nidx])
 
-    for idx, x in enumerate(FQB):
-        label_x = labels[idx]
-        if mfd_dist_generic(FQx, x) < radius:
-            if label_x == label_of_FQx:
-                true_neighbors.append(x)
-            else:
-                imposter_neighbors.append(x)
-
+    #print(true_neighbors)
+    #print(imposter_neighbors)
+    #print('=========================')
     return true_neighbors, imposter_neighbors
 
 #############################################################################
@@ -268,7 +302,7 @@ def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_gen
 #############################################################################
 def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, B, labels):
     Q = Q.reshape(DIMENSION, DIMENSION)
-    print(Q)
+    # print(Q)
     total = 0
     FQB = map_dataset_to_mfd(B, Q, mfd_generic)
     for idx, FQx in enumerate(FQB):
@@ -302,7 +336,7 @@ def get_sim_dis_pairs(labels):
 ################################################
 def mmc_loss_generic(Q, reg, mfd_generic, mfd_dist_generic, B, labels):
     Q = Q.reshape(DIMENSION, DIMENSION)
-    print(Q)
+    # print(Q)
     total = 0
     FQB = map_dataset_to_mfd(B, Q, mfd_generic)
     sim_idxs, dis_idxs = get_sim_dis_pairs(labels)  # sim_idxs should be n x 2,    dis_idxs should be m x 2
@@ -393,17 +427,18 @@ def kmeans_generic(FQB, k, mfd_dist_generic):
     return assigned_labels
 
 
-###########################################################################################
-###########################################################################################
-###########################################################################################
+# ----------------------------------------------------------------------------------------------------
+#
+# MANIFOLD MDS
+#
+# ----------------------------------------------------------------------------------------------------
 
-####  MDS CODE
 def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic):
     # Dist is a symmetric npts x npts  distance matrix
     # we are optimizing over location of the points in the base space B
 
     B = B.reshape(npts, dim)  # datapoints in base space B,  B is the variable of optimization
-    print(B)
+    # print(B)
     I = np.diag([1 for _ in range(dim)])  # dim x dim identity matrix
 
     FB = map_dataset_to_mfd(B, I, mfd_generic)
@@ -424,11 +459,192 @@ def mds_initialization(npts, dim):
 
     return np.asarray(pts)
 
-# print(discrete_metric)
-B0 = mds_initialization(max_size, DIMENSION)
+# ----------------------------------------------------------------------------------------------------
+#
+# PERFORMANCE EVALUATION
+#
+# ----------------------------------------------------------------------------------------------------
 
-mds_Powell = minimize(mds_loss, B0, args=(max_size, DIMENSION, discrete_metric, hyp_mfd, hyp_mfd_dist), method='Powell', options={'disp': True})
-print(mds_Powell)
+import sklearn.metrics
+
+def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, true_labels):
+    npts = len(Bnew_euc)
+    dim = len(Bnew_euc[0])
+        # split data into training and testing
+    idx_tr = []
+    idx_ts = []
+    euc_data_tr = []
+    euc_data_ts = []
+    mfd_data_tr = []
+    mfd_data_ts = []
+    labels_tr = []
+    labels_ts = []
+    for i in range(npts):
+        if np.random.random() < train_ratio:   ####   CHECK SYNTAX
+            idx_tr.append(i)
+            euc_data_tr.append(Bnew_euc[i])
+            mfd_data_tr.append(Bnew_mfd[i])
+            labels_tr.append(true_labels[i])
+        else:
+            idx_ts.append(i)
+            euc_data_ts.append(Bnew_euc[i])
+            mfd_data_ts.append(Bnew_mfd[i])
+            labels_ts.append(true_labels[i])
+
+            # learn Q using mmc
+    Q0 = np.diag([1 for _ in range(dim)])
+    euc_res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, fxn_euc, fxn_euc_dist, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    mfd_res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, fxn_mfd, fxn_mfd_dist, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+
+    euc_Qnew = euc_res_Powell.x.reshape(dim, dim)
+    mfd_Qnew = mfd_res_Powell.x.reshape(dim, dim)
+
+    euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
+    mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
+
+
+        # run k-means
+    K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means
+
+    euc_lab_ts  = kmeans_generic(euc_data_ts,  K, fxn_euc_dist)
+    euc_Qlab_ts = kmeans_generic(euc_Qdata_ts, K, fxn_euc_dist)
+    mfd_lab_ts  = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist)
+    mfd_Qlab_ts = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist)
+
+        # evaluate k-means results
+    err_euc_orig = eval_cluster_quality(labels_ts, euc_lab_ts)
+    err_euc_qlrn = eval_cluster_quality(labels_ts, euc_Qlab_ts)
+    err_mfd_orig = eval_cluster_quality(labels_ts, mfd_lab_ts)
+    err_mfd_qlrn = eval_cluster_quality(labels_ts, mfd_Qlab_ts)
+
+    return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
+
+
+def eval_cluster_quality(true_labels, assigned_labels):
+    true_labels = [i[0] for i in true_labels]   # this fixes the porblem? yes, code is running now -- ok
+
+    ARI = sklearn.metrics.adjusted_rand_score(true_labels, assigned_labels)  # adjusted rand index   (higher number is better)
+    NMI = sklearn.metrics.normalized_mutual_info_score(true_labels, assigned_labels) # normalized mutual information (higer number is better)
+    err = [ARI, NMI]  # using TWO different evaluation metrics   <<<<< CHECK SYNTAX is fine?
+    return err
+
+def do_cluster_tests_all(nrounds, train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, true_labels):
+    err_euc_orig = []
+    err_euc_qlrn = []
+    err_mfd_orig = []
+    err_mfd_qlrn = []
+
+    for r in range(nrounds):
+        eeo,eeq,emo,emq = do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, true_labels)
+        err_euc_orig.append(eeo)
+        err_euc_qlrn.append(eeq)
+        err_mfd_orig.append(emo)
+        err_mfd_qlrn.append(emq)
+
+    return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
+
+# ----------------------------------------------------------------------------------------------------
+#
+# MAIN
+#
+# ----------------------------------------------------------------------------------------------------
+
+
+
+datasetname = 'karate'
+# datasetname = 'football'
+# datasetname = 'polbooks'
+# datasetname = 'polblogs'
+
+
+if datasetname == 'karate':
+    Beuc   = scipy.io.loadmat('./karate_euc.mat')['arr']
+    Bhyp   = scipy.io.loadmat('./karate_gmds_hyp.mat')['arr'] # this file has correct data in it!
+    Labels = scipy.io.loadmat('./karate_data_1.mat')['label']
+    train_ratio = 0.6
+
+elif datasetname == 'football':
+    Beuc   = scipy.io.loadmat('./football_euc.mat')['arr']
+    Bhyp   = scipy.io.loadmat('./football_gmds_hyp.mat')['arr'] # this file has correct data in it!
+    Labels = scipy.io.loadmat('./football_data_1.mat')['label']
+    train_ratio = 0.6
+
+elif datasetname == 'polbooks':
+    Beuc   = scipy.io.loadmat('./polbooks_euc.mat')['arr']
+    Bhyp   = scipy.io.loadmat('./polbooks_gmds_hyp.mat')['arr'] # this file has correct data in it!
+    Labels = scipy.io.loadmat('./polbooks_data_1.mat')['label']
+    train_ratio = 0.7
+
+elif datasetname == 'polblogs':
+    Beuc   = scipy.io.loadmat('./polblogs_euc.mat')['arr']
+    Bhyp   = scipy.io.loadmat('./polblogs_gmds_hyp.mat')['arr']  # FILE DOES NOT EXIST!  CORRESPONDING .txt doesnt exist (because the run was freezing)
+    Labels = scipy.io.loadmat('./polblogs_data_1.mat')['label']
+    train_ratio = 0.8
+
+else:
+    print('undefined dataset!')
+    assert(1==0)
+
+
+nrounds = 10
+
+fxn_euc = euclid_mfd
+fxn_euc_dist = euclid_mfd_dist
+fxn_mfd = hyp_mfd
+fxn_mfd_dist = hyp_mfd_dist
+
+
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, Labels)
+
+
+print ("EUC ORIG ERR: ")
+print (err_euc_orig)
+print ("EUC LRN ERR: ")
+print (err_euc_qlrn)
+print ("HYP ORIG ERR: ")
+print (err_mfd_orig)
+print ("HYP LRN ERR: ")
+print (err_mfd_qlrn)
+
+# ----------------------------------------------------------------------------------------------------
+#
+# DEPRECATED TESTS BELOW
+#
+# ----------------------------------------------------------------------------------------------------
+
+
+    ########     !!!!!!!!    COMMMENT OUT EVERYTHING BELOW !!!!!!!!!!!!!    ##################
+
+
+
+# print(discrete_metric)
+# B0 = mds_initialization(max_size, DIMENSION)
+#
+# mds_Powell = minimize(mds_loss, B0, args=(max_size, DIMENSION, discrete_metric, euclid_mfd, euclid_mfd_dist), method='Powell', options={'disp': True})
+# print(mds_Powell)
+# Bnew = mds_Powell.x.reshape(max_size, DIMENSION)
+
+# Bnew = [ 3.37889783,  0.08641009,  4.03466906,  0.91689482,  2.01794846,
+#        0.85489373,  4.67956457,  1.3629206 ,  7.1019306 , -1.47017666,
+#        7.90281666, -1.19068525,  8.09079113, -1.33309995,  5.27157478,
+#        1.89893081,  1.97554528,  1.28534465,  2.78694838,  2.47883715,
+#        9.20954276, -0.52678939, 10.81249127,  0.88102833, 10.49919753,
+#        1.06822317,  2.12085145,  0.63625682,  1.60567772,  3.8255304 ,
+#        1.60260633,  3.79855365, 23.02476214, -3.11915807,  9.81967872,
+#        0.1224998 , -0.05813067,  2.95937075,  1.72823746, -0.30825014,
+#        0.56186356,  3.41480805, 10.12324174,  1.93312885, -0.62548791,
+#        2.03350795, -0.70267319,  1.36315131,  0.91742442, -1.82649377,
+#        0.35692144, -1.53474547, -1.18274845,  0.39341533, -0.09894901,
+#       -0.07771349, -0.03397873, -0.10443997, -0.96138015,  0.88029606,
+#        1.9222306 ,  1.99712694,  0.85090881, -0.38443464,  0.51403067,
+#        1.26898486,  0.29549035,  0.88938318]
+# Bnew = np.asarray(Bnew).reshape(max_size, DIMENSION)
+# Bnew = scipy.io.loadmat('./karate_hmds.mat')['arr']   ########## <<<<<
+# Bnew = [np.asarray(i[1:]) for i in Bnew]
+# Labels = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]  #<<<<<<<< GOOD
+
+# >>>     0  0  0  0  0  0  0  0  0  1  0  0  0  0  1  1  0  0  1  0  1  0   1     1     1     1     1     1     1     1     1     1     1     1
+
 
 ###########################################################################################
 ###########################################################################################
@@ -436,6 +652,8 @@ print(mds_Powell)
 
 
 Q0 = np.diag([1 for _ in range(DIMENSION)])
+# print("INITIAL EMBEDDING")
+# print(map_dataset_to_mfd(Bnew, Q0, hyp_mfd))
 # Q0 = minkowski_metric_tensor
 
 # res_NelderMead = minimize(Loss2, Q0, method='nelder-mead', options={'xtol': 1e-3, 'disp': True})
@@ -444,16 +662,19 @@ Q0 = np.diag([1 for _ in range(DIMENSION)])
 # res_BFGS = minimize(lmnn_Loss, Q0, args=(100, 1, 0.01, deuc), method='BFGS', options={'disp': True})
 # print(res_BFGS)
 
-# res_Powell = minimize(lmnn_loss_generic, Q0, args=(100, 5, 0.5, hyp_mfd, hyp_mfd_dist, B, Labels), method='Powell', options={'disp': True})
+# res_Powell = minimize(lmnn_loss_generic, Q0, args=(100, 2, 0.5, euclid_mfd, euclid_mfd_dist, B, Labels), method='Powell', options={'disp': True})
 # print(res_Powell)
 
 sq_euclid_mfd_dist = lambda x, y : np.linalg.norm(x - y) ** 2
 # Centers = kmeans_generic(map_dataset_to_mfd(B, Q0, euclid_mfd), 3, sq_euclid_mfd_dist)
 
-# res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, euclid_mfd, euclid_mfd_dist, B, Labels), method='Powell', options={'disp': True})
+# res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, hyp_mfd, hyp_mfd_dist, Bnew, Labels), method='Powell', options={'disp': True})
 # Qnew = res_Powell.x.reshape(DIMENSION, DIMENSION)
 # print(res_Powell)
 # print(np.matmul(Qnew.T, Qnew))
+#
+# print("TRANSFORM")
+# print(np.asarray(map_dataset_to_mfd(Bnew, Qnew, hyp_mfd)).tolist())
 
 # ----------------------------------------------------------------------------------------------------
 #
