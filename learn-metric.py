@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.io
 from config import username, api_key
-import plotly
+# import plotly
 
-plotly.tools.set_credentials_file(username=username, api_key=api_key)
+# plotly.tools.set_credentials_file(username=username, api_key=api_key)
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -12,8 +12,8 @@ plotly.tools.set_credentials_file(username=username, api_key=api_key)
 # ----------------------------------------------------------------------------------------------------
 
 import collections
-import plotly.plotly as py
-import plotly.graph_objs as go
+# import plotly.plotly as py
+# import plotly.graph_objs as go
 import matlab.engine
 
 # matlab = matlab.engine.start_matlab()
@@ -30,7 +30,7 @@ import matlab.engine
 # print(Labels)
 # print(Edges)
 
-polblogs1 = scipy.io.loadmat('./data/realnet/football_data_1_edges.mat')
+polblogs1 = scipy.io.loadmat('./data/realnet/karate_data_1_edges.mat')
 intEdges = polblogs1['edges']  ##
 
 Edges = [[str(i) for i in Edge] for Edge in intEdges]
@@ -403,6 +403,7 @@ def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic):
     # we are optimizing over location of the points in the base space B
 
     B = B.reshape(npts, dim)  # datapoints in base space B,  B is the variable of optimization
+    print(B)
     I = np.diag([1 for _ in range(dim)])  # dim x dim identity matrix
 
     FB = map_dataset_to_mfd(B, I, mfd_generic)
@@ -423,7 +424,9 @@ def mds_initialization(npts, dim):
 
     return np.asarray(pts)
 
+# print(discrete_metric)
 B0 = mds_initialization(max_size, DIMENSION)
+
 mds_Powell = minimize(mds_loss, B0, args=(max_size, DIMENSION, discrete_metric, hyp_mfd, hyp_mfd_dist), method='Powell', options={'disp': True})
 print(mds_Powell)
 
