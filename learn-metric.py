@@ -313,18 +313,24 @@ def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_gen
     #print('-------------------')
     true_neighbors = []
     imposter_neighbors = []
+    true_neighbors_idx = []
+    imposter_neighbors_idx = []
+
     for i in range(1,k+1):
         nidx = idx_of_points[i]      # +1 because ignoring the zero'th index that is supposed to be FQx itself
         label_nxi = labels[nidx]     # this assumes k < length(FQB)
         if label_nxi == label_of_FQx:
             true_neighbors.append(FQB[nidx])
+            true_neighbors_idx.append(nidx)
         else:
             imposter_neighbors.append(FQB[nidx])
+            imposter_neighbors_idx.append(nidx)
 
-    #print(true_neighbors)
-    #print(imposter_neighbors)
-    #print('=========================')
-    return true_neighbors, imposter_neighbors
+    ##print(true_neighbors)
+    ##print(imposter_neighbors)
+    ##print('=========================')
+    #return true_neighbors, imposter_neighbors
+    return true_neighbors_idx, imposter_neighbors_idx
 
 #############################################################################
 ##################  LMNN for general manifolds
@@ -333,6 +339,10 @@ def sv_constraint(Q):
     u, s, vh = np.linalg.svd(Q)
     s = s.tolist()
     return max(s)
+
+all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
+all_FQx_impos = {}
+
 
 def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, mfd_integrand, B, labels):
     dim = len(B[0])
@@ -343,15 +353,25 @@ def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, mfd_inte
     for idx, FQx in enumerate(FQB):
         label_of_FQx = labels[idx]
 
-        #FQy_nbrs, FQz_nbrs = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand)
-        FQy_nbrs, FQz_nbrs = get_all_neighbors_of(B[idx], label_of_FQx, B, labels, radius, k, mfd_dist_generic, mfd_integrand)
+        FQy_nbrs_idx, FQz_nbrs_idx = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand)
+        #FQy_nbrs, FQz_nbrs = get_all_neighbors_of(B[idx], label_of_FQx, B, labels, radius, k, mfd_dist_generic, mfd_integrand)
+        try:
+            all_FQx_nbrs[str(idx)] = list(set(all_FQx_nbrs[str(idx)]).union(set(FQy_nbrs_idx)))
+        except KeyError:
+            all_FQx_nbrs[str(idx)] = []
+        try: # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  DONT KNOW THE SYNTAX
+            all_FQx_impos[str(idx)] = list(set(all_FQx_impos[str(idx)]).union(set(FQz_nbrs_idx)))
+        except KeyError:
+            all_FQx_impos[str(idx)] = []
 
-        for FQy in FQy_nbrs:
-            total += (1 - reg) * mfd_dist_generic(FQx, FQy, mfd_integrand)
+        #for FQy in FQy_nbrs:
+        for FQy_idx in all_FQx_nbrs[str(idx)]:
+            total += (1 - reg) * mfd_dist_generic(FQx, FQB[FQy_idx], mfd_integrand)
 
-            for FQz in FQz_nbrs:
-                if mfd_dist_generic(FQx,FQz, mfd_integrand) < mfd_dist_generic(FQx,FQy, mfd_integrand)+1:  # +1 is the margin
-                    total += reg * (1 + mfd_dist_generic(FQx, FQy, mfd_integrand) - mfd_dist_generic(FQx, FQz, mfd_integrand))
+            #for FQz in FQz_nbrs:
+            for FQz_idx in all_FQx_impos[str(idx)]:
+                if mfd_dist_generic(FQx,FQB[FQz_idx], mfd_integrand) < mfd_dist_generic(FQx,FQB[FQy_idx], mfd_integrand)+1:  # +1 is the margin
+                    total += reg * (1 + mfd_dist_generic(FQx, FQB[FQy_idx], mfd_integrand) - mfd_dist_generic(FQx, FQB[FQz_idx], mfd_integrand))
 
     return total
 ################################################
@@ -546,10 +566,12 @@ def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_
     mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
     # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
 
+    all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
+    all_FQx_impos = {}
     # euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, 11, 0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
     # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 200, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
     # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 200, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
-    print(mfd_res_Powell)
+    # print(mfd_res_Powell)
 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
@@ -610,6 +632,9 @@ def do_classification_tests_all(nrounds, train_ratio, K, Bnew_euc, fxn_euc, fxn_
     err_mfd_qlrn = []
 
     for r in range(nrounds):
+        all_FQx_nbrs.clear()
+        all_FQx_impos.clear
+
         eeo,eeq,emo,emq = do_classification_test(train_ratio, K, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels)
         err_euc_orig.append(eeo)
         err_euc_qlrn.append(eeq)
@@ -653,17 +678,20 @@ def do_classification_test(train_ratio, K, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew
     #mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
     # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
 
+    all_FQx_nbrs.clear()  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
+    all_FQx_impos.clear()
+
     #K = 5
     reg = 0.5
     euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(None, K, reg, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(None, K, reg, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(None, K, reg, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
     # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 200, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
     # print(mfd_res_Powell)
 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
-    print(euc_Qnew)
-    scipy.io.savemat('karate_Qeuc.mat', mdict = {'arr': map_dataset_to_mfd(Bnew_euc, euc_Qnew, euclid_mfd)})
-    # mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
+    # print(euc_Qnew)
+    # scipy.io.savemat('karate_Qeuc.mat', mdict = {'arr': map_dataset_to_mfd(Bnew_euc, euc_Qnew, euclid_mfd)})
+    mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
 
     # print (mfd_Qnew)
     # print (np.matmul(mfd_Qnew.T, mfd_Qnew))
@@ -730,8 +758,8 @@ def knnclassify_generic(data_ts,  K, data_tr, labels_tr, mfd_dist_generic, mfd_i
 
 
 # datasetname = 'helicoid'
-datasetname = 'karate'
-# datasetname = 'football'
+# datasetname = 'karate'
+datasetname = 'football'
 # datasetname = 'polbooks'
 # datasetname = 'polblogs'
 
@@ -758,7 +786,7 @@ elif datasetname == 'football':
     Beuc   = scipy.io.loadmat('./football_euc.mat')['arr']
     Bhyp   = scipy.io.loadmat('./football_gmds_hyp.mat')['arr'] # this file has correct data in it!
     Labels = scipy.io.loadmat('./football_data_1.mat')['label']
-    train_ratio = 0.6
+    train_ratio = 0.75
     fxn_mfd = hyp_mfd
     fxn_mfd_dist = hyp_mfd_dist
     #fxn_integrand = integrand_hyp
@@ -796,7 +824,7 @@ fxn_euc_dist = euclid_mfd_dist
 
 
 # err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
-err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, 1, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, 3, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
 #
 # Q = [[  1.,           0.        ],
