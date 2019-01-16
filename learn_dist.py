@@ -1,3 +1,6 @@
+import numpy as np
+from scipy.integrate import quad
+
 def Negatives(x, n):
     samples = []
     for edge in D:
@@ -12,18 +15,48 @@ def Negatives(x, n):
 
 NEGATIVES = 5
 
-def learn_distance(x, y, Q, samples=100, segments=7):
-    def integrand(t, x, y, Q):
-        Pth = (1 - t) * x + (y * t)
-        Dff = y-x
-        ip = np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
-        nm = np.matmul(Pth.T, Dff)
-        dn = 1 + np.matmul(Pth.T, Pth)
+def integrand_hyp(t, x, y, Q):
+    Pth = (1 - t) * x + (y * t)
+    Dff = y-x
+    ip = np.matmul(Dff.T, np.matmul(Q.T, np.matmul(Q, Dff)))
+    nm = np.matmul(Pth.T, Dff)
+    dn = 1 + np.matmul(Pth.T, Pth)
 
-        return np.sqrt( ip - (nm**2 / dn) )
+    return np.sqrt( ip - (nm**2 / dn) )
 
-    x = x[1:]
-    y = y[1:]
+def integrand_helicoid(t, x, y, Q):
+    Pth = (1 - t) * x + (y * t)
+    Dff = y-x   # 2 x 1
+
+    r = Pth[0]
+    s = Pth[1]
+    D = [[np.cos(s), -r * np.sin(s)],
+        [np.sin(s), r * np.cos(s)],
+        [0, 1]]
+
+#[[1 0 0]
+#[0 1 0]
+#[0 0 1]]
+#[0.26626796 0.96126932 0.54656653]
+
+    v = np.matmul(D, np.matmul(Q, Dff))
+    #ValueError: shapes (3,2) and (3,) not aligned: 2 (dim 1) != 3 (dim 0)
+    return np.linalg.norm(v)
+#
+# Pth = [r ; s]    ->    r cos(s) r sin(s)  s
+#  Q()
+#d / dr = cos(s) sin(s) 0
+#d/ds   = -r sin(s)   r cos(s) 1
+#  D = [d/dr  d/ds]
+
+
+
+def learn_distance(x, y, Q, integrand, samples=100, segments=7):
+    # x = x[1:]
+    # y = y[1:]
+    x = np.asarray(x)
+    y = np.asarray(y)
+    dim = len(x)
     path_segments = []
     for i in range(segments):
         path_segments.append((i / (segments-1) * (y - x)) + x)
@@ -41,7 +74,7 @@ def learn_distance(x, y, Q, samples=100, segments=7):
 
             sample_radius = max(np.linalg.norm(this_point - prev_point), np.linalg.norm(this_point - next_point))
 
-            s = np.random.uniform(-sample_radius,sample_radius,size=(samples, DIMENSION))
+            s = np.random.uniform(-sample_radius,sample_radius,size=(samples, dim))
 
 
             D1 = quad(integrand, 0, 1, args=(prev_point, this_point, Q))[0]

@@ -63,7 +63,6 @@ Edges = [[str(i) for i in Edge] for Edge in intEdges]
 # from gensim.viz.poincare import poincare_2d_visualization
 from os import getcwd
 
-DIMENSION = 2
 
 def plot_embedding(model, labels, title, filename):
     plot = poincare_2d_visualization(model, labels, title)
@@ -212,9 +211,37 @@ for i in range(max_size):
 from scipy.optimize import minimize
 from scipy.integrate import quad
 
-minkowski_diagonal = [1 for _ in range(DIMENSION+1)]
-minkowski_diagonal[0] = -1
-minkowski_metric_tensor = np.diag(minkowski_diagonal)
+
+##########  FUNCTIONS FOR HELICOID MANIFOLD ####################################
+def helicoid_mfd(x):
+    r = x[0]
+    t = x[1]
+    mp = [r*np.cos(t), r*np.sin(t), t]
+    return mp   # helicoid map
+
+def helicoid_mfd_dist(x,y,integrand):
+    eps = 1e-5
+
+    xr = x[0] / np.cos(x[2])
+    xtemp = x[1] / np.sin(x[2])
+    assert(np.abs(xr - xtemp) < eps)
+    xs = x[2]
+
+    yr = y[0]/np.cos(y[2])
+    ytemp = y[1] / np.sin(y[2])
+    assert(np.abs(yr - ytemp) < eps)
+    ys = y[2]
+
+    bx = [xr, xs]
+    by = [yr, ys]
+    I = np.diag([1 for _ in bx])
+    x = np.asarray(bx)
+    y = np.asarray(by)
+    dist = learn_distance(bx, by, I, integrand, samples=100, segments=7)
+
+    return dist
+
+
 
 ##########  FUNCTIONS FOR HYPERBOLIC MANIFOLD ####################################
 def hyp_mfd(x):
@@ -223,7 +250,7 @@ def hyp_mfd(x):
 
     return x   # hyperbolic map
 
-def hyp_mfd_dist(x,y):
+def hyp_mfd_dist(x,y, integrand):
     x0 = x[0]
     y0 = y[0]
     xtail = x[1:]
@@ -236,8 +263,10 @@ def hyp_mfd_dist(x,y):
 ##########  FUNCTIONS FOR EUCLIDEAN MANIFOLD ####################################
 def euclid_mfd(x):
     return x   # its the identity map
-def euclid_mfd_dist(x,y):
+
+def euclid_mfd_dist(x,y, integrand):
     return np.linalg.norm(x-y)
+
 ###################################################################
 def map_dataset_to_mfd(B, Q, mfd_generic):
     FQB = []
@@ -249,14 +278,14 @@ def map_dataset_to_mfd(B, Q, mfd_generic):
 
     return FQB
 
-def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic):
+def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand):
 #############  CORRECT CODE FOR radius
 #    true_neighbors = []
 #    imposter_neighbors = []
 #
 #    for idx, x in enumerate(FQB):
 #        label_x = labels[idx]
-#        if mfd_dist_generic(FQx, x) < radius:
+#        if mfd_dist_generic(FQx, x, mfd_integrand) < radius:
 #            if label_x == label_of_FQx:
 #                true_neighbors.append(x)
 #            else:
@@ -267,13 +296,7 @@ def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_gen
 ################ CODE FOR K
     dst_from_FQx = []
     for idx, FQxi in enumerate(FQB):
-        dst_from_FQx.append( mfd_dist_generic(FQx, FQxi))
-
-    #sorted_distance = dst_from_FQx
-    #sorted_distance.sort()    # actual sorted distances not needed, so comment?
-    #### sort(dist_from_FQx)   # <<<<<< CHECK SYNTAX!!    MAKE SURE SORT IS IN ASCENDING ORDER
-                                                             # BETTER YET, if there is a way sort returns top k directly, let me know
-
+        dst_from_FQx.append( mfd_dist_generic(FQx, FQxi, mfd_integrand))
 
     idx_of_points = np.argsort(np.asarray(dst_from_FQx))  # <<< only need these indices
 
@@ -300,22 +323,23 @@ def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_gen
 #############################################################################
 ##################  LMNN for general manifolds
 #############################################################################
-def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, B, labels):
-    Q = Q.reshape(DIMENSION, DIMENSION)
+def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, mfd_integrand, B, labels):
+    dim = len(B[0])
+    Q = Q.reshape(dim, dim)
     # print(Q)
     total = 0
     FQB = map_dataset_to_mfd(B, Q, mfd_generic)
     for idx, FQx in enumerate(FQB):
         label_of_FQx = labels[idx]
 
-        FQy_nbrs, FQz_nbrs = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic)
+        FQy_nbrs, FQz_nbrs = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand)
 
         for FQy in FQy_nbrs:
-            total += (1 - reg) * mfd_dist_generic(FQx, FQy)
+            total += (1 - reg) * mfd_dist_generic(FQx, FQy, mfd_integrand)
 
             for FQz in FQz_nbrs:
-                if mfd_dist_generic(FQx,FQz) < mfd_dist_generic(FQx,FQy)+1:  # +1 is the margin
-                    total += reg * (1 + mfd_dist_generic(FQx, FQy) - mfd_dist_generic(FQx, FQz))
+                if mfd_dist_generic(FQx,FQz, mfd_integrand) < mfd_dist_generic(FQx,FQy, mfd_integrand)+1:  # +1 is the margin
+                    total += reg * (1 + mfd_dist_generic(FQx, FQy, mfd_integrand) - mfd_dist_generic(FQx, FQz, mfd_integrand))
 
     return total
 ################################################
@@ -334,8 +358,10 @@ def get_sim_dis_pairs(labels):
     return sim_idxs, dis_idxs
 
 ################################################
-def mmc_loss_generic(Q, reg, mfd_generic, mfd_dist_generic, B, labels):
-    Q = Q.reshape(DIMENSION, DIMENSION)
+def mmc_loss_generic(Q, reg, mfd_generic, mfd_dist_generic, mfd_integrand, B, labels):
+    dim = len(B[0])
+    Q = Q.reshape(dim, dim)
+    print(Q)
     # print(Q)
     total = 0
     FQB = map_dataset_to_mfd(B, Q, mfd_generic)
@@ -350,10 +376,10 @@ def mmc_loss_generic(Q, reg, mfd_generic, mfd_dist_generic, B, labels):
 
     #SCALE = 1e-50
     for sim_idx in sim_idxs:  # CHECK SYNTAX, ITERATE OVER ROWS OF nsim_idxs
-        total += (1-reg) * mfd_dist_generic(FQB[sim_idx[0]], FQB[sim_idx[1]]) / nsim_idxs  #
+        total += (1-reg) * mfd_dist_generic(FQB[sim_idx[0]], FQB[sim_idx[1]], mfd_integrand) / nsim_idxs  #
 
     for dis_idx in dis_idxs:  # CHECK SYNTAX, ITERATE OVER ROWS OF nsim_idxs
-        total -= (reg)   * mfd_dist_generic(FQB[dis_idx[0]], FQB[dis_idx[1]]) / ndis_idxs    # YES, MINUS IS CORRECT
+        total -= (reg)   * mfd_dist_generic(FQB[dis_idx[0]], FQB[dis_idx[1]], mfd_integrand) / ndis_idxs
 
     return total
 
@@ -385,7 +411,7 @@ def kmeans_randomly_partition_data(FQB, k):
 #    curr_sum
 #    return new_cost
 
-def kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, k):
+def kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, mfd_integrand, k):
     total_cost = 0
     pts_per_clust = [0 for _ in range(k)]
     for lblx in assigned_labels:  ## this is what i want
@@ -394,20 +420,20 @@ def kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, k):
     for idxx, FQx in enumerate(FQB):
         for idxy, FQy in enumerate(FQB):
             if assigned_labels[idxx] == assigned_labels[idxy]:
-                total_cost += mfd_dist_generic(FQx,FQy) / (2*pts_per_clust[assigned_labels[idxx]])
+                total_cost += mfd_dist_generic(FQx,FQy, mfd_integrand) / (2*pts_per_clust[assigned_labels[idxx]])
 
     return total_cost
 
 ###########################################################################################
 
-def kmeans_generic(FQB, k, mfd_dist_generic):
+def kmeans_generic(FQB, k, mfd_dist_generic, mfd_integrand):
     assigned_labels = kmeans_randomly_partition_data(FQB, k)
 
     converged = False
     while not converged:
         converged = True
         for idxx, FQx in enumerate(FQB):
-            curr_cost = kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, k)
+            curr_cost = kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, mfd_integrand, k)
 
             min_new_cost = curr_cost
             min_new_label_x = assigned_labels[idxx]
@@ -415,7 +441,7 @@ def kmeans_generic(FQB, k, mfd_dist_generic):
             for kidx in range(k):
                 new_labels = assigned_labels
                 new_labels[idxx] = kidx
-                new_proposed_cost = kmeans_cost_of_assignment(FQB, new_labels, mfd_dist_generic, k)
+                new_proposed_cost = kmeans_cost_of_assignment(FQB, new_labels, mfd_dist_generic, mfd_integrand, k)
 
                 if new_proposed_cost < min_new_cost:
                     min_new_cost = new_proposed_cost
@@ -466,10 +492,12 @@ def mds_initialization(npts, dim):
 # ----------------------------------------------------------------------------------------------------
 
 import sklearn.metrics
+from learn_dist import integrand_helicoid, learn_distance
 
-def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, true_labels):
+def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
     npts = len(Bnew_euc)
-    dim = len(Bnew_euc[0])
+    dim_euc = len(Bnew_euc[0])
+    dim_mfd = len(Bnew_mfd[0])
         # split data into training and testing
     idx_tr = []
     idx_ts = []
@@ -492,24 +520,32 @@ def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_
             labels_ts.append(true_labels[i])
 
             # learn Q using mmc
-    Q0 = np.diag([1 for _ in range(dim)])
-    euc_res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, fxn_euc, fxn_euc_dist, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    mfd_res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, fxn_mfd, fxn_mfd_dist, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    Q0_euc = np.diag([1 for _ in range(dim_euc)])
 
-    euc_Qnew = euc_res_Powell.x.reshape(dim, dim)
-    mfd_Qnew = mfd_res_Powell.x.reshape(dim, dim)
+    Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
+#    euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
 
-    euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
+    #euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, 5, 0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    #mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 5, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+
+#    euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
+    mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
+
+    print (mfd_Qnew)
+    # print (np.matmul(mfd_Qnew.T, mfd_Qnew))
+
+#    euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
 
 
         # run k-means
     K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means
 
-    euc_lab_ts  = kmeans_generic(euc_data_ts,  K, fxn_euc_dist)
-    euc_Qlab_ts = kmeans_generic(euc_Qdata_ts, K, fxn_euc_dist)
-    mfd_lab_ts  = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist)
-    mfd_Qlab_ts = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist)
+    euc_lab_ts  = kmeans_generic(euc_data_ts,  K, fxn_euc_dist, None)
+    euc_Qlab_ts = kmeans_generic(euc_Qdata_ts, K, fxn_euc_dist, None)
+    mfd_lab_ts  = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist, fxn_integrand)
+    mfd_Qlab_ts = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist, fxn_integrand)
 
         # evaluate k-means results
     err_euc_orig = eval_cluster_quality(labels_ts, euc_lab_ts)
@@ -528,14 +564,14 @@ def eval_cluster_quality(true_labels, assigned_labels):
     err = [ARI, NMI]  # using TWO different evaluation metrics   <<<<< CHECK SYNTAX is fine?
     return err
 
-def do_cluster_tests_all(nrounds, train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, true_labels):
+def do_cluster_tests_all(nrounds, train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
     err_euc_orig = []
     err_euc_qlrn = []
     err_mfd_orig = []
     err_mfd_qlrn = []
 
     for r in range(nrounds):
-        eeo,eeq,emo,emq = do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, true_labels)
+        eeo,eeq,emo,emq = do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels)
         err_euc_orig.append(eeo)
         err_euc_qlrn.append(eeq)
         err_mfd_orig.append(emo)
@@ -551,59 +587,81 @@ def do_cluster_tests_all(nrounds, train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, 
 
 
 
-datasetname = 'karate'
+datasetname = 'helicoid'
+#datasetname = 'karate'
 # datasetname = 'football'
 # datasetname = 'polbooks'
 # datasetname = 'polblogs'
-
 
 if datasetname == 'karate':
     Beuc   = scipy.io.loadmat('./karate_euc.mat')['arr']
     Bhyp   = scipy.io.loadmat('./karate_gmds_hyp.mat')['arr'] # this file has correct data in it!
     Labels = scipy.io.loadmat('./karate_data_1.mat')['label']
     train_ratio = 0.6
+    fxn_mfd = hyp_mfd
+    fxn_mfd_dist = hyp_mfd_dist
+    #fxn_integrand = integrand_hyp
+    fxn_integrand = None
+
+elif datasetname == 'helicoid':
+    Beuc = scipy.io.loadmat('./helicoid.mat')['data']  # 3 D
+    Bhyp   = scipy.io.loadmat('./helicoid.mat')['base'] # 2 D
+    Labels = scipy.io.loadmat('./helicoid.mat')['labels']
+    train_ratio = 0.6
+    fxn_mfd = helicoid_mfd
+    fxn_mfd_dist = helicoid_mfd_dist
+    fxn_integrand = integrand_helicoid
 
 elif datasetname == 'football':
     Beuc   = scipy.io.loadmat('./football_euc.mat')['arr']
     Bhyp   = scipy.io.loadmat('./football_gmds_hyp.mat')['arr'] # this file has correct data in it!
     Labels = scipy.io.loadmat('./football_data_1.mat')['label']
     train_ratio = 0.6
+    fxn_mfd = hyp_mfd
+    fxn_mfd_dist = hyp_mfd_dist
+    #fxn_integrand = integrand_hyp
+    fxn_integrand = None
 
 elif datasetname == 'polbooks':
     Beuc   = scipy.io.loadmat('./polbooks_euc.mat')['arr']
     Bhyp   = scipy.io.loadmat('./polbooks_gmds_hyp.mat')['arr'] # this file has correct data in it!
     Labels = scipy.io.loadmat('./polbooks_data_1.mat')['label']
     train_ratio = 0.7
+    fxn_mfd = hyp_mfd
+    fxn_mfd_dist = hyp_mfd_dist
+    #fxn_integrand = integrand_hyp
+    fxn_integrand = None
 
 elif datasetname == 'polblogs':
     Beuc   = scipy.io.loadmat('./polblogs_euc.mat')['arr']
     Bhyp   = scipy.io.loadmat('./polblogs_gmds_hyp.mat')['arr']  # FILE DOES NOT EXIST!  CORRESPONDING .txt doesnt exist (because the run was freezing)
     Labels = scipy.io.loadmat('./polblogs_data_1.mat')['label']
     train_ratio = 0.8
+    fxn_mfd = hyp_mfd
+    fxn_mfd_dist = hyp_mfd_dist
+    #fxn_integrand = integrand_hyp
+    fxn_integrand = None
 
 else:
     print('undefined dataset!')
     assert(1==0)
 
 
-nrounds = 10
+nrounds = 1
 
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
-fxn_mfd = hyp_mfd
-fxn_mfd_dist = hyp_mfd_dist
 
-
-err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, Labels)
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
 
 print ("EUC ORIG ERR: ")
 print (err_euc_orig)
 print ("EUC LRN ERR: ")
 print (err_euc_qlrn)
-print ("HYP ORIG ERR: ")
+print ("MFD ORIG ERR: ")
 print (err_mfd_orig)
-print ("HYP LRN ERR: ")
+print ("MFD LRN ERR: ")
 print (err_mfd_qlrn)
 
 # ----------------------------------------------------------------------------------------------------
@@ -651,7 +709,7 @@ print (err_mfd_qlrn)
 ###########################################################################################
 
 
-Q0 = np.diag([1 for _ in range(DIMENSION)])
+# Q0 = np.diag([1 for _ in range(DIMENSION)])
 # print("INITIAL EMBEDDING")
 # print(map_dataset_to_mfd(Bnew, Q0, hyp_mfd))
 # Q0 = minkowski_metric_tensor
@@ -665,7 +723,7 @@ Q0 = np.diag([1 for _ in range(DIMENSION)])
 # res_Powell = minimize(lmnn_loss_generic, Q0, args=(100, 2, 0.5, euclid_mfd, euclid_mfd_dist, B, Labels), method='Powell', options={'disp': True})
 # print(res_Powell)
 
-sq_euclid_mfd_dist = lambda x, y : np.linalg.norm(x - y) ** 2
+#sq_euclid_mfd_dist = lambda x, y : np.linalg.norm(x - y) ** 2
 # Centers = kmeans_generic(map_dataset_to_mfd(B, Q0, euclid_mfd), 3, sq_euclid_mfd_dist)
 
 # res_Powell = minimize(mmc_loss_generic, Q0, args=(0.5, hyp_mfd, hyp_mfd_dist, Bnew, Labels), method='Powell', options={'disp': True})
