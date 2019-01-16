@@ -43,7 +43,8 @@ for Edge in intEdges.tolist():
 
 # print(Edges)
 Labels = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-
+#                                                         ^
+#################################################################################################################
 
 # ZACHARY'S KARATE CLUB DATASET
 
@@ -179,6 +180,7 @@ for i in range(max_size):
         except nx.exception.NetworkXNoPath:
             discrete_metric[i][j] = 50
 
+# print(discrete_metric)
 # MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
 # graph_embedded = MDS_embedding.fit_transform(discrete_metric)
 # scipy.io.savemat('polblogs_euc.mat', mdict = {'arr': graph_embedded})
@@ -208,8 +210,9 @@ for i in range(max_size):
 #
 # ----------------------------------------------------------------------------------------------------
 
-from scipy.optimize import minimize
+from scipy.optimize import minimize, NonlinearConstraint
 from scipy.integrate import quad
+
 
 
 ##########  FUNCTIONS FOR HELICOID MANIFOLD ####################################
@@ -223,23 +226,26 @@ def helicoid_mfd_dist(x,y,integrand):
     eps = 1e-5
 
     xr = x[0] / np.cos(x[2])
-    xtemp = x[1] / np.sin(x[2])
-    assert(np.abs(xr - xtemp) < eps)
+    # xtemp = x[1] / np.sin(x[2])
+    # assert(np.abs(xr - xtemp) < eps)
     xs = x[2]
 
     yr = y[0]/np.cos(y[2])
-    ytemp = y[1] / np.sin(y[2])
-    assert(np.abs(yr - ytemp) < eps)
+    # ytemp = y[1] / np.sin(y[2])
+    # assert(np.abs(yr - ytemp) < eps)
     ys = y[2]
 
-    bx = [xr, xs]
-    by = [yr, ys]
-    I = np.diag([1 for _ in bx])
-    x = np.asarray(bx)
-    y = np.asarray(by)
-    dist = learn_distance(bx, by, I, integrand, samples=100, segments=7)
+    bx = np.asarray([np.abs(xr), xs])
+    by = np.asarray([np.abs(yr), ys])
+# #    bx = np.asarray([0, xs])
+#     by = np.asarray([0, ys])
 
-    return dist
+    return np.linalg.norm(bx-by)
+    #I = np.diag([1 for _ in bx])
+    #x = np.asarray(bx)
+    #y = np.asarray(by)
+    #dist = learn_distance(bx, by, I, integrand, samples=100, segments=7)
+    #return dist
 
 
 
@@ -323,6 +329,11 @@ def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_gen
 #############################################################################
 ##################  LMNN for general manifolds
 #############################################################################
+def sv_constraint(Q):
+    u, s, vh = np.linalg.svd(Q)
+    s = s.tolist()
+    return max(s)
+
 def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, mfd_integrand, B, labels):
     dim = len(B[0])
     Q = Q.reshape(dim, dim)
@@ -332,7 +343,8 @@ def lmnn_loss_generic(Q, radius, k, reg, mfd_generic, mfd_dist_generic, mfd_inte
     for idx, FQx in enumerate(FQB):
         label_of_FQx = labels[idx]
 
-        FQy_nbrs, FQz_nbrs = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand)
+        #FQy_nbrs, FQz_nbrs = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand)
+        FQy_nbrs, FQz_nbrs = get_all_neighbors_of(B[idx], label_of_FQx, B, labels, radius, k, mfd_dist_generic, mfd_integrand)
 
         for FQy in FQy_nbrs:
             total += (1 - reg) * mfd_dist_generic(FQx, FQy, mfd_integrand)
@@ -361,7 +373,6 @@ def get_sim_dis_pairs(labels):
 def mmc_loss_generic(Q, reg, mfd_generic, mfd_dist_generic, mfd_integrand, B, labels):
     dim = len(B[0])
     Q = Q.reshape(dim, dim)
-    print(Q)
     # print(Q)
     total = 0
     FQB = map_dataset_to_mfd(B, Q, mfd_generic)
@@ -459,7 +470,7 @@ def kmeans_generic(FQB, k, mfd_dist_generic, mfd_integrand):
 #
 # ----------------------------------------------------------------------------------------------------
 
-def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic):
+def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic, integrand):
     # Dist is a symmetric npts x npts  distance matrix
     # we are optimizing over location of the points in the base space B
 
@@ -472,7 +483,8 @@ def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic):
     loss = 0
     for i in range(npts):
         for j in range(i-1):  # traverse the upper triangular matrix
-            loss += (mfd_dist_generic(FB[i], FB[j]) - Dist[i][j])**2  # **2 is supposed to be squared CHECK SYNTAX
+            #loss += (mfd_dist_generic(FB[i], FB[j]) - Dist[i][j])**2  # **2 is supposed to be squared CHECK SYNTAX
+            loss += np.abs(mfd_dist_generic(FB[i], FB[j], integrand) - Dist[i][j])  # no square because of outliers
 
     return loss
 
@@ -485,6 +497,12 @@ def mds_initialization(npts, dim):
 
     return np.asarray(pts)
 
+# B0 = mds_initialization(max_size, 2)
+# #
+# mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
+# print(mds_Powell)
+# Bnew = mds_Powell.x.reshape(max_size, 2)
+# print(Bnew)
 # ----------------------------------------------------------------------------------------------------
 #
 # PERFORMANCE EVALUATION
@@ -521,13 +539,17 @@ def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_
 
             # learn Q using mmc
     Q0_euc = np.diag([1 for _ in range(dim_euc)])
-
     Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
-#    euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
 
-    euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, 11, 0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 11, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # sv_cons = NonlinearConstraint(sv_constraint, 0, 1)
+    euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
+    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
+
+    # euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, 11, 0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 200, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 200, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
+    print(mfd_res_Powell)
 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
@@ -579,6 +601,126 @@ def do_cluster_tests_all(nrounds, train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, 
 
     return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
 
+############################################################################################################
+############################################################################################################
+def do_classification_tests_all(nrounds, train_ratio, K, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
+    err_euc_orig = []
+    err_euc_qlrn = []
+    err_mfd_orig = []
+    err_mfd_qlrn = []
+
+    for r in range(nrounds):
+        eeo,eeq,emo,emq = do_classification_test(train_ratio, K, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels)
+        err_euc_orig.append(eeo)
+        err_euc_qlrn.append(eeq)
+        err_mfd_orig.append(emo)
+        err_mfd_qlrn.append(emq)
+
+    return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
+
+
+def do_classification_test(train_ratio, K, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
+    npts = len(Bnew_euc)
+    dim_euc = len(Bnew_euc[0])
+    dim_mfd = len(Bnew_mfd[0])
+        # split data into training and testing
+    idx_tr = []
+    idx_ts = []
+    euc_data_tr = []
+    euc_data_ts = []
+    mfd_data_tr = []
+    mfd_data_ts = []
+    labels_tr = []
+    labels_ts = []
+    for i in range(npts):
+        if np.random.random() < train_ratio:   ####   CHECK SYNTAX
+            idx_tr.append(i)
+            euc_data_tr.append(Bnew_euc[i])
+            mfd_data_tr.append(Bnew_mfd[i])
+            labels_tr.append(true_labels[i])
+        else:
+            idx_ts.append(i)
+            euc_data_ts.append(Bnew_euc[i])
+            mfd_data_ts.append(Bnew_mfd[i])
+            labels_ts.append(true_labels[i])
+
+            # learn Q using mmc
+    Q0_euc = np.diag([1 for _ in range(dim_euc)])
+    Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
+
+    # sv_cons = NonlinearConstraint(sv_constraint, 0, 1)
+    #euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    #mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
+    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
+
+    #K = 5
+    reg = 0.5
+    euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(None, K, reg, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(None, K, reg, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 200, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
+    # print(mfd_res_Powell)
+
+    euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
+    print(euc_Qnew)
+    scipy.io.savemat('karate_Qeuc.mat', mdict = {'arr': map_dataset_to_mfd(Bnew_euc, euc_Qnew, euclid_mfd)})
+    # mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
+
+    # print (mfd_Qnew)
+    # print (np.matmul(mfd_Qnew.T, mfd_Qnew))
+
+    euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
+    mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
+
+    euc_Qdata_tr = map_dataset_to_mfd(euc_data_tr, euc_Qnew, fxn_euc)
+    mfd_Qdata_tr = map_dataset_to_mfd(mfd_data_tr, mfd_Qnew, fxn_mfd)
+
+
+    #    # run k-means
+    #K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means
+
+    euc_lab_ts   = knnclassify_generic(euc_data_ts,  K, euc_data_tr,  labels_tr, fxn_euc_dist, None)
+    euc_Qlab_ts  = knnclassify_generic(euc_Qdata_ts, K, euc_Qdata_tr, labels_tr, fxn_euc_dist, None)
+    mfd_lab_ts   = knnclassify_generic(mfd_data_ts,  K, mfd_data_tr,  labels_tr, fxn_euc_dist, None)
+    mfd_Qlab_ts  = knnclassify_generic(mfd_Qdata_ts, K, mfd_Qdata_tr, labels_tr, fxn_euc_dist, None)
+
+    # euc_Qlab_ts = kmeans_generic(euc_Qdata_ts, K, fxn_euc_dist, None)
+    # mfd_lab_ts  = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist, fxn_integrand)
+    # mfd_Qlab_ts = kmeans_generic(mfd_Qdata_ts, K, fxn_mfd_dist, fxn_integrand)
+
+        # evaluate classification results
+    err_euc_orig = eval_classification_quality(labels_ts, euc_lab_ts)
+    err_euc_qlrn = eval_classification_quality(labels_ts, euc_Qlab_ts)
+    err_mfd_orig = eval_classification_quality(labels_ts, mfd_lab_ts)
+    err_mfd_qlrn = eval_classification_quality(labels_ts, mfd_Qlab_ts)
+
+    return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
+
+def eval_classification_quality(labels_ts, mfd_lab_ts):
+    err_01 = 0
+    for i in range(len(labels_ts)):
+        if labels_ts[i][0] != mfd_lab_ts[i]:
+            err_01 += 1
+
+    err_01 /= len(labels_ts)
+    return err_01
+
+def knnclassify_generic(data_ts,  K, data_tr, labels_tr, mfd_dist_generic, mfd_integrand):
+    labels_ts = []
+
+    for x_ts in data_ts:
+        dst_to_xts = []
+        for idx_tr, x_tr in enumerate(data_tr):
+            dst_to_xts.append( mfd_dist_generic(x_tr, x_ts, mfd_integrand))
+
+        idx_of_points = np.argsort(np.asarray(dst_to_xts))  # <<< only need these indices
+
+        l = [];
+        for i in idx_of_points[:K]:
+            l.append(labels_tr[i])
+        l_xts = scipy.stats.mode(l)
+        labels_ts.append(l_xts[0].tolist()[0])
+
+    return labels_ts
 # ----------------------------------------------------------------------------------------------------
 #
 # MAIN
@@ -652,7 +794,24 @@ nrounds = 10
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
 
-err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+
+# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, 1, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+
+#
+# Q = [[  1.,           0.        ],
+#     [-72.84578928,   0.9476725 ]]
+
+# Q = [ [1.94754533e+05,  9.79474623e+05], [-1.15952005e+08, -2.41173469e+06]]
+# Q = [ [42.5277812 , -55.44849986], [-18.23708945,  23.76893528]]
+
+
+# scipy.io.savemat('helicoid_Q.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, helicoid_mfd)})
+# scipy.io.savemat('karate_Qhyp.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, hyp_mfd)})
+
+#Q =
+
+  # scipy.io.savemat('polblogs_hyp.mat', mdict = {'arr': B})
 
 
 print ("EUC ORIG ERR: ")
@@ -663,6 +822,13 @@ print ("MFD ORIG ERR: ")
 print (err_mfd_orig)
 print ("MFD LRN ERR: ")
 print (err_mfd_qlrn)
+
+
+scipy.io.savemat(datasetname+'_clf_err_euc_orig.mat', mdict = {'arr': err_euc_orig})
+scipy.io.savemat(datasetname+'_clf_err_euc_qlrn.mat', mdict = {'arr': err_euc_qlrn})
+scipy.io.savemat(datasetname+'_clf_err_mfd_orig.mat', mdict = {'arr': err_mfd_orig})
+scipy.io.savemat(datasetname+'_clf_err_mfd_qlrn.mat', mdict = {'arr': err_mfd_qlrn})
+
 
 # ----------------------------------------------------------------------------------------------------
 #

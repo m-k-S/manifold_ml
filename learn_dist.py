@@ -54,8 +54,7 @@ def integrand_helicoid(t, x, y, Q):
 def learn_distance(x, y, Q, integrand, samples=100, segments=7):
     # x = x[1:]
     # y = y[1:]
-    x = np.asarray(x)
-    y = np.asarray(y)
+
     dim = len(x)
     path_segments = []
     for i in range(segments):
