@@ -524,18 +524,18 @@ def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_
 
     Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
 #    euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
 
-    #euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, 5, 0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    #mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 5, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, 11, 0.5, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, 11, 0.5, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
 
-#    euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
+    euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
 
-    print (mfd_Qnew)
+    # print (mfd_Qnew)
     # print (np.matmul(mfd_Qnew.T, mfd_Qnew))
 
-#    euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
+    euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
 
 
@@ -545,7 +545,7 @@ def do_cluster_test(train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_
     euc_lab_ts  = kmeans_generic(euc_data_ts,  K, fxn_euc_dist, None)
     euc_Qlab_ts = kmeans_generic(euc_Qdata_ts, K, fxn_euc_dist, None)
     mfd_lab_ts  = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist, fxn_integrand)
-    mfd_Qlab_ts = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist, fxn_integrand)
+    mfd_Qlab_ts = kmeans_generic(mfd_Qdata_ts, K, fxn_mfd_dist, fxn_integrand)
 
         # evaluate k-means results
     err_euc_orig = eval_cluster_quality(labels_ts, euc_lab_ts)
@@ -587,8 +587,8 @@ def do_cluster_tests_all(nrounds, train_ratio, Bnew_euc, fxn_euc, fxn_euc_dist, 
 
 
 
-datasetname = 'helicoid'
-#datasetname = 'karate'
+# datasetname = 'helicoid'
+datasetname = 'karate'
 # datasetname = 'football'
 # datasetname = 'polbooks'
 # datasetname = 'polblogs'
@@ -647,7 +647,7 @@ else:
     assert(1==0)
 
 
-nrounds = 1
+nrounds = 10
 
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
