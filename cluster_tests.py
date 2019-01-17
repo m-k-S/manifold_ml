@@ -101,7 +101,6 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     # euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(reg, lmbd,  fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
     # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
     # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
-
     all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
     all_FQx_impos = {}
     euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, k, reg, lmbd,  fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
@@ -117,14 +116,16 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
 
     euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
+    euc_Idata_ts = map_dataset_to_mfd(euc_data_ts, Q0_euc, fxn_euc)
+    mfd_Idata_ts = map_dataset_to_mfd(mfd_data_ts, Q0_mfd, fxn_mfd)
 
 
         # run k-means
     K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means
 
-    euc_lab_ts  = kmeans_generic(euc_data_ts,  K, fxn_euc_dist, None)
+    euc_lab_ts  = kmeans_generic(euc_Idata_ts, K, fxn_euc_dist, None)
     euc_Qlab_ts = kmeans_generic(euc_Qdata_ts, K, fxn_euc_dist, None)
-    mfd_lab_ts  = kmeans_generic(mfd_data_ts,  K, fxn_mfd_dist, fxn_integrand)
+    mfd_lab_ts  = kmeans_generic(mfd_Idata_ts, K, fxn_mfd_dist, fxn_integrand)
     mfd_Qlab_ts = kmeans_generic(mfd_Qdata_ts, K, fxn_mfd_dist, fxn_integrand)
 
         # evaluate k-means results
