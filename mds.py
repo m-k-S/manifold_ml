@@ -7,7 +7,13 @@
 from sklearn.manifold import MDS
 import networkx as nx
 import time
+import scipy.io
+import numpy as np
+from scipy.optimize import minimize
+from mfd_functions import *
 
+karate1 = scipy.io.loadmat('./karate_edges_new.mat')
+intEdges = karate1['edges']
 
 G = nx.Graph()
 G.add_edges_from(intEdges.tolist())
@@ -20,12 +26,12 @@ for i in range(max_size):
         except nx.exception.NetworkXNoPath:
             discrete_metric[i][j] = 50
 
-# print(discrete_metric)
-# MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
-# graph_embedded = MDS_embedding.fit_transform(discrete_metric)
-# scipy.io.savemat('polblogs_euc.mat', mdict = {'arr': graph_embedded})
 
-# print(discrete_metric)
+print(discrete_metric)
+MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
+graph_embedded = MDS_embedding.fit_transform(discrete_metric)
+scipy.io.savemat('karate_euc.mat', mdict = {'arr': graph_embedded})
+
 
 # hMDSEdges = []
 # for Edge in intEdges.tolist():
@@ -69,10 +75,11 @@ def mds_initialization(npts, dim):
         pts.append(np.random.multivariate_normal(mean, cov))
 
     return np.asarray(pts)
-
+# 
 # B0 = mds_initialization(max_size, 2)
 # #
 # mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
 # print(mds_Powell)
 # Bnew = mds_Powell.x.reshape(max_size, 2)
 # print(Bnew)
+# scipy.io.savemat('karate_gmds_hyp.mat', mdict = {'arr': Bnew})

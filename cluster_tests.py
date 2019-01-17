@@ -1,7 +1,9 @@
-###########################################################################################
-###########################################################################################
-
+import numpy as np
+from scipy.optimize import minimize
+from metric_loss_functions import *
+from mfd_functions import *
 import random
+import sklearn.metrics
 
 def assign_k_random_points_from_fqb(FQB, k):
     selection = []
@@ -98,13 +100,13 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
 
     # sv_cons = NonlinearConstraint(sv_constraint, 0, 1)
-    # euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(reg, lmbd,  fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
+    euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
     # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
-    all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
-    all_FQx_impos = {}
-    euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, k, reg, lmbd,  fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, k, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
+    # all_FQx_impos = {}
+    # euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, k, reg, lmbd,  fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
+    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, k, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
     # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, k, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
     # print(mfd_res_Powell)
 
@@ -118,7 +120,6 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
     euc_Idata_ts = map_dataset_to_mfd(euc_data_ts, Q0_euc, fxn_euc)
     mfd_Idata_ts = map_dataset_to_mfd(mfd_data_ts, Q0_mfd, fxn_mfd)
-
 
         # run k-means
     K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means
@@ -159,6 +160,3 @@ def do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, 
         err_mfd_qlrn.append(emq)
 
     return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
-
-############################################################################################################
-############################################################################################################

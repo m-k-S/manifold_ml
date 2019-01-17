@@ -303,8 +303,25 @@ def knnclassify_generic(data_ts,  K, data_tr, labels_tr, mfd_dist_generic, mfd_i
 #
 # ----------------------------------------------------------------------------------------------------
 
+from cluster_tests import *
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset')
+parser.add_argument('--method')
+parser.add_argument('--K')
+parser.add_argument('--reg')
+parser.add_argument('--lmbd')
+args = parser.parse_args()
+
+method = args.method
+k = int(args.K)
+reg = float(args.reg)
+lmbd = float(args.lmbd)
+datasetname = args.dataset
+
 # datasetname = 'helicoid'
-datasetname = 'karate'
+# datasetname = 'karate'
 # datasetname = 'football'
 # datasetname = 'polbooks'
 # datasetname = 'polblogs'
@@ -362,11 +379,11 @@ else:
     print('undefined dataset!')
     assert(1==0)
 
+
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
 
 
-# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 #
 # scipy.io.savemat('helicoid_Q.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, helicoid_mfd)})
 # scipy.io.savemat('karate_Qhyp.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, hyp_mfd)})
@@ -374,10 +391,20 @@ fxn_euc_dist = euclid_mfd_dist
 #Q =
 
   # scipy.io.savemat('polblogs_hyp.mat', mdict = {'arr': B})
-# nrounds = 10
+
+nrounds = 10
 # k = 7
 # reg = 0.5
 # lmbd = 1.1
+
+print("Running")
+
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+#
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
 
 # print(fxn_mfd) # <function hyp_mfd at 0x113050b70>
 # err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
@@ -387,6 +414,8 @@ fxn_euc_dist = euclid_mfd_dist
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
 
+
+'''
 nrounds = 10
 for datasetname in ['football', 'karate', 'polbooks']:
     if datasetname == 'karate':
@@ -446,7 +475,7 @@ for datasetname in ['football', 'karate', 'polbooks']:
                 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_euc_qlrn})
                 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_mfd_orig})
                 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_mfd_qlrn})
-
+'''
 # print ("EUC ORIG ERR: ")
 # print (err_euc_orig)
 # print ("EUC LRN ERR: ")
