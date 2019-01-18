@@ -12,8 +12,6 @@ from scipy.integrate import quad
 from mfd_functions import *
 from metric_loss_functions import *
 
-
-
 def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand, todebug=False):
 ################ CODE FOR K
     dst_from_FQx = []
@@ -421,14 +419,14 @@ err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests
 
 # err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
-print ("EUC ORIG ERR: ")
-print (err_euc_orig)
-print ("EUC LRN ERR: ")
-print (err_euc_qlrn)
-print ("MFD ORIG ERR: ")
-print (err_mfd_orig)
-print ("MFD LRN ERR: ")
-print (err_mfd_qlrn)
+# print ("EUC ORIG ERR: ")
+# print (err_euc_orig)
+# print ("EUC LRN ERR: ")
+# print (err_euc_qlrn)
+# print ("MFD ORIG ERR: ")
+# print (err_mfd_orig)
+# print ("MFD LRN ERR: ")
+# print (err_mfd_qlrn)
 
 scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
 scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})

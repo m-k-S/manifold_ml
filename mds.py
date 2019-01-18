@@ -6,7 +6,6 @@
 
 from sklearn.manifold import MDS
 import networkx as nx
-import time
 import scipy.io
 import numpy as np
 from scipy.optimize import minimize
