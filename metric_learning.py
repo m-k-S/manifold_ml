@@ -13,6 +13,8 @@ from scipy.integrate import quad
 from mfd_functions import *
 from metric_loss_functions import *
 
+
+
 def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand, todebug=False):
 ################ CODE FOR K
     dst_from_FQx = []
@@ -58,7 +60,7 @@ def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_gen
 
 all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
 all_FQx_impos = {}
-
+count = 0
 
 def lmnn_loss_generic(Q, radius, k, reg, lmbd, mfd_generic, mfd_dist_generic, mfd_integrand, B, labels, toprintdebug=False):
     dim = len(B[0])
@@ -71,7 +73,8 @@ def lmnn_loss_generic(Q, radius, k, reg, lmbd, mfd_generic, mfd_dist_generic, mf
     for idx, FQx in enumerate(FQB):
         label_of_FQx = labels[idx]
 
-        FQy_nbrs_idx, FQz_nbrs_idx = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand, toprintdebug)
+#        FQy_nbrs_idx, FQz_nbrs_idx = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand, toprintdebug)
+
         #FQy_nbrs, FQz_nbrs = get_all_neighbors_of(B[idx], label_of_FQx, B, labels, radius, k, mfd_dist_generic, mfd_integrand)
 
         # if toprintdebug:
@@ -81,6 +84,7 @@ def lmnn_loss_generic(Q, radius, k, reg, lmbd, mfd_generic, mfd_dist_generic, mf
         #     print(FQz_nbrs_idx)
 
         if toprintdebug:
+            FQy_nbrs_idx, FQz_nbrs_idx = get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand, toprintdebug)
             try:
                 all_FQx_nbrs[str(idx)] = list(set(all_FQx_nbrs[str(idx)]).union(set(FQy_nbrs_idx)))
             except KeyError:
@@ -89,6 +93,9 @@ def lmnn_loss_generic(Q, radius, k, reg, lmbd, mfd_generic, mfd_dist_generic, mf
                 all_FQx_impos[str(idx)] = list(set(all_FQx_impos[str(idx)]).union(set(FQz_nbrs_idx)))
             except KeyError:
                 all_FQx_impos[str(idx)] = FQz_nbrs_idx
+        else:
+            FQy_nbrs_idx = []
+            FQz_nbrs_idx = []
 
         try:
             tmp_FQx_nbrs = list(set(all_FQx_nbrs[str(idx)]).union(set(FQy_nbrs_idx)))
@@ -147,7 +154,7 @@ def do_classification_tests_all(nrounds, train_ratio, K, reg, lmbd, Bnew_euc, fx
 
     for r in range(nrounds):
         all_FQx_nbrs.clear()
-        all_FQx_impos.clear
+        all_FQx_impos.clear()
 
         eeo,eeq,emo,emq = do_classification_test(train_ratio, K, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels)
         err_euc_orig.append(eeo)
@@ -192,22 +199,40 @@ def do_classification_test(train_ratio, K, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc
 
     # print('--------------')
 
-    def print_loss(xk):
-        loss = lmnn_loss_generic(xk, None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr, True)
+    def print_loss_mfd(xk):
+        count=0
+#        count+=1
+#        if count==1:
+        #loss = lmnn_loss_generic(xk, None, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, None, mfd_data_tr, labels_tr, True)
+    def print_loss_euc(xk):
+        count=0
+#        count+=1
+#        if count==1:
+        #loss = lmnn_loss_generic(xk, None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, mfd_data_tr, labels_tr, True)
         #print (xk.reshape(dim_euc, dim_euc))
         #print (loss)
         # print('--------------')
 
     all_FQx_nbrs.clear()  #  <<<<<<<<<<<<<<<<<<
     all_FQx_impos.clear()
+    count = 0
 
     print("EUCLIDEAN INITIAL LOSS: " + str(lmnn_loss_generic(Q0_euc, None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr, True)))
-    euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True}, callback=print_loss)
+    euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True}, callback=print_loss_euc)
+    for count in range(5):
+        print("EUCLIDEAN IN PROGRESS LOSS: " + str(lmnn_loss_generic(euc_res_Powell.x, None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr, True)))
+        euc_res_Powell = minimize(lmnn_loss_generic, euc_res_Powell.x, args=(None, K, reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True}, callback=print_loss_euc)
+
     all_FQx_nbrs.clear()  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
     all_FQx_impos.clear()
 
+    count = 0
     print("MANIFOLD INITIAL LOSS: " + str(lmnn_loss_generic(Q0_mfd, None, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, None, mfd_data_tr, labels_tr, True)))
-    mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(None, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True}, callback=print_loss)
+    mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(None, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True}, callback=print_loss_mfd)
+    for count in range(5):
+        print("MANIFOLD IN PROGRESS LOSS: " + str(lmnn_loss_generic(mfd_res_Powell.x, None, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, None, mfd_data_tr, labels_tr, True)))
+        mfd_res_Powell = minimize(lmnn_loss_generic, mfd_res_Powell.x, args=(None, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True}, callback=print_loss_mfd)
+
     all_FQx_nbrs.clear()  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
     all_FQx_impos.clear()
     # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, K, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
