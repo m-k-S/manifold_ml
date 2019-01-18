@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.io
-from config import username, api_key
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -261,28 +260,26 @@ def do_classification_test(train_ratio, K, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc
     mfd_Idata_tr = map_dataset_to_mfd(mfd_data_tr, Q0_mfd, fxn_mfd)
 
 
-    euc_lab_tr   = knnclassify_generic(euc_Idata_tr,  K, euc_Idata_tr,  labels_tr, fxn_euc_dist, None, True)
-    euc_Qlab_tr  = knnclassify_generic(euc_Qdata_tr,  K, euc_Qdata_tr,  labels_tr, fxn_euc_dist, None, True)
-    mfd_lab_tr   = knnclassify_generic(mfd_Idata_tr,  K, mfd_Idata_tr,  labels_tr, fxn_mfd_dist, None, True)
-    mfd_Qlab_tr  = knnclassify_generic(mfd_Qdata_tr,  K, mfd_Qdata_tr,  labels_tr, fxn_mfd_dist, None, True)
-    err_euc_orig = eval_classification_quality(labels_tr, euc_lab_tr)
-    err_euc_qlrn = eval_classification_quality(labels_tr, euc_Qlab_tr)
-    err_mfd_orig = eval_classification_quality(labels_tr, mfd_lab_tr)
-    err_mfd_qlrn = eval_classification_quality(labels_tr, mfd_Qlab_tr)
+    # euc_lab_tr   = knnclassify_generic(euc_Idata_tr,  K, euc_Idata_tr,  labels_tr, fxn_euc_dist, None, True)
+    # euc_Qlab_tr  = knnclassify_generic(euc_Qdata_tr,  K, euc_Qdata_tr,  labels_tr, fxn_euc_dist, None, True)
+    # mfd_lab_tr   = knnclassify_generic(mfd_Idata_tr,  K, mfd_Idata_tr,  labels_tr, fxn_mfd_dist, None, True)
+    # mfd_Qlab_tr  = knnclassify_generic(mfd_Qdata_tr,  K, mfd_Qdata_tr,  labels_tr, fxn_mfd_dist, None, True)
+    #
+    # err_euc_orig = eval_classification_quality(labels_tr, euc_lab_tr)
+    # err_euc_qlrn = eval_classification_quality(labels_tr, euc_Qlab_tr)
+    # err_mfd_orig = eval_classification_quality(labels_tr, mfd_lab_tr)
+    # err_mfd_qlrn = eval_classification_quality(labels_tr, mfd_Qlab_tr)
 
-    #    # run k-means
-    ####K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means
-
-    #euc_lab_ts   = knnclassify_generic(euc_Idata_ts,  K, euc_Idata_tr,  labels_tr, fxn_euc_dist, None)
-    #euc_Qlab_ts  = knnclassify_generic(euc_Qdata_ts, K, euc_Qdata_tr, labels_tr, fxn_euc_dist, None)
-    #mfd_lab_ts   = knnclassify_generic(mfd_Idata_ts,  K, mfd_Idata_tr,  labels_tr, fxn_mfd_dist, None)
-    #mfd_Qlab_ts  = knnclassify_generic(mfd_Qdata_ts, K, mfd_Qdata_tr, labels_tr, fxn_mfd_dist, None)
+    euc_lab_ts   = knnclassify_generic(euc_Idata_ts,  K, euc_Idata_tr,  labels_tr, fxn_euc_dist, None, False)
+    euc_Qlab_ts  = knnclassify_generic(euc_Qdata_ts,  K, euc_Qdata_tr,  labels_tr, fxn_euc_dist, None, False)
+    mfd_lab_ts   = knnclassify_generic(mfd_Idata_ts,  K, mfd_Idata_tr,  labels_tr, fxn_mfd_dist, None, False)
+    mfd_Qlab_ts  = knnclassify_generic(mfd_Qdata_ts,  K, mfd_Qdata_tr,  labels_tr, fxn_mfd_dist, None, False)
 
         # evaluate classification results
-    #err_euc_orig = eval_classification_quality(labels_ts, euc_lab_ts)
-    #err_euc_qlrn = eval_classification_quality(labels_ts, euc_Qlab_ts)
-    #err_mfd_orig = eval_classification_quality(labels_ts, mfd_lab_ts)
-    #err_mfd_qlrn = eval_classification_quality(labels_ts, mfd_Qlab_ts)
+    err_euc_orig = eval_classification_quality(labels_ts, euc_lab_ts)
+    err_euc_qlrn = eval_classification_quality(labels_ts, euc_Qlab_ts)
+    err_mfd_orig = eval_classification_quality(labels_ts, mfd_lab_ts)
+    err_mfd_qlrn = eval_classification_quality(labels_ts, mfd_Qlab_ts)
 
     return err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn
 
