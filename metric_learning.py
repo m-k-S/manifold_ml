@@ -188,8 +188,7 @@ def do_classification_test(train_ratio, K, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc
     Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
 
     # euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='CG', options={'disp': True})
-    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
+    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
 
     # print('--------------')
 
@@ -221,7 +220,7 @@ def do_classification_test(train_ratio, K, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc
     # print(euc_Qnew)
     # scipy.io.savemat('karate_Qeuc.mat', mdict = {'arr': map_dataset_to_mfd(Bnew_euc, euc_Qnew, euclid_mfd)})
 
-    print (mfd_Qnew)
+    # print (mfd_Qnew)
     # print (np.matmul(mfd_Qnew.T, mfd_Qnew))
 
     euc_Idata_ts = map_dataset_to_mfd(euc_data_ts, Q0_euc, fxn_euc)
@@ -330,7 +329,7 @@ if datasetname == 'karate':
     Beuc   = scipy.io.loadmat('./data/karate_euc.mat')['arr']
     Bhyp   = scipy.io.loadmat('./data/karate_gmds_hyp.mat')['arr'] # this file has correct data in it!
     Labels = scipy.io.loadmat('./data/karate_data_1.mat')['label']
-    train_ratio = 0.6
+    train_ratio = 0.8
     fxn_mfd = hyp_mfd
     fxn_mfd_dist = hyp_mfd_dist
     #fxn_integrand = integrand_hyp
@@ -383,8 +382,6 @@ else:
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
 
-
-#
 # scipy.io.savemat('helicoid_Q.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, helicoid_mfd)})
 # scipy.io.savemat('karate_Qhyp.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, hyp_mfd)})
 
@@ -397,17 +394,27 @@ nrounds = 10
 # reg = 0.5
 # lmbd = 1.1
 
-print("Running")
 
-err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
-#
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_mmc_clus_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+
+# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+
+print ("EUC ORIG ERR: ")
+print (err_euc_orig)
+print ("EUC LRN ERR: ")
+print (err_euc_qlrn)
+print ("MFD ORIG ERR: ")
+print (err_mfd_orig)
+print ("MFD LRN ERR: ")
+print (err_mfd_qlrn)
+
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
+
 
 # print(fxn_mfd) # <function hyp_mfd at 0x113050b70>
-# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
@@ -476,12 +483,3 @@ for datasetname in ['football', 'karate', 'polbooks']:
                 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_mfd_orig})
                 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_mfd_qlrn})
 '''
-# print ("EUC ORIG ERR: ")
-# print (err_euc_orig)
-# print ("EUC LRN ERR: ")
-# print (err_euc_qlrn)
-# print ("MFD ORIG ERR: ")
-# print (err_mfd_orig)
-# print ("MFD LRN ERR: ")
-# print (err_mfd_qlrn)
-#

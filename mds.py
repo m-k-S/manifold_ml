@@ -28,9 +28,9 @@ for i in range(max_size):
 
 
 print(discrete_metric)
-MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
-graph_embedded = MDS_embedding.fit_transform(discrete_metric)
-scipy.io.savemat('karate_euc.mat', mdict = {'arr': graph_embedded})
+# MDS_embedding = MDS(n_components=2, dissimilarity='precomputed')
+# graph_embedded = MDS_embedding.fit_transform(discrete_metric)
+# scipy.io.savemat('karate_euc.mat', mdict = {'arr': graph_embedded})
 
 
 # hMDSEdges = []
@@ -63,7 +63,8 @@ def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic, integrand):
     for i in range(npts):
         for j in range(i-1):  # traverse the upper triangular matrix
             #loss += (mfd_dist_generic(FB[i], FB[j]) - Dist[i][j])**2  # **2 is supposed to be squared CHECK SYNTAX
-            loss += np.abs(mfd_dist_generic(FB[i], FB[j], integrand) - Dist[i][j])  # no square because of outliers
+            loss += (mfd_dist_generic(FB[i], FB[j], integrand) - Dist[i][j]) ** 2  # no square because of outliers
+                                                                                    # stupid me it is being called
 
     return loss
 
@@ -75,11 +76,12 @@ def mds_initialization(npts, dim):
         pts.append(np.random.multivariate_normal(mean, cov))
 
     return np.asarray(pts)
-# 
-# B0 = mds_initialization(max_size, 2)
-# #
-# mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
-# print(mds_Powell)
-# Bnew = mds_Powell.x.reshape(max_size, 2)
-# print(Bnew)
-# scipy.io.savemat('karate_gmds_hyp.mat', mdict = {'arr': Bnew})
+
+B0 = mds_initialization(max_size, 2)
+#
+# print(mds_loss(B0, max_size, 2, discrete_metric, euclid_mfd, euclid_mfd_dist, None))
+mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, euclid_mfd, euclid_mfd_dist, None), method='Powell', options={'disp': True})
+print(mds_Powell)
+Bnew = mds_Powell.x.reshape(max_size, 2)
+print(Bnew)
+scipy.io.savemat('karate_euc.mat', mdict = {'arr': Bnew})
