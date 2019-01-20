@@ -173,7 +173,6 @@ def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic, integrand):
             #loss += (mfd_dist_generic(FB[i], FB[j]) - Dist[i][j])**2  # **2 is supposed to be squared CHECK SYNTAX
             loss += (mfd_dist_generic(FB[i], FB[j], integrand) - Dist[i][j]) ** 2  # no square because of outliers
                                                                                     # stupid me it is being called
-
     return loss
 
 def mds_initialization(npts, dim):
@@ -187,8 +186,8 @@ def mds_initialization(npts, dim):
 
 B0 = mds_initialization(max_size, 2)
 
-mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, euclid_mfd, euclid_mfd_dist, None), method='Powell', options={'disp': True})
+mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
 print(mds_Powell)
 Bnew = mds_Powell.x.reshape(max_size, 2)
 print(Bnew)
-scipy.io.savemat('20newsgroup_euc30.mat', mdict = {'arr': Bnew})
+scipy.io.savemat('20newsgroup_hmds30.mat', mdict = {'arr': Bnew})

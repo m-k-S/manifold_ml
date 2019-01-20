@@ -34,20 +34,10 @@ def integrand_helicoid(t, x, y, Q):
         [np.sin(s), r * np.cos(s)],
         [0, 1]]
 
-#[[1 0 0]
-#[0 1 0]
-#[0 0 1]]
-#[0.26626796 0.96126932 0.54656653]
-
     v = np.matmul(D, np.matmul(Q, Dff))
     #ValueError: shapes (3,2) and (3,) not aligned: 2 (dim 1) != 3 (dim 0)
     return np.linalg.norm(v)
-#
-# Pth = [r ; s]    ->    r cos(s) r sin(s)  s
-#  Q()
-#d / dr = cos(s) sin(s) 0
-#d/ds   = -r sin(s)   r cos(s) 1
-#  D = [d/dr  d/ds]
+
 
 
 
@@ -122,6 +112,7 @@ def learn_distance(x, y, Q, integrand, samples=100, segments=7):
         Distance = quad(integrand, 0, 1, args=(path_segments[idx], path_segments[idx+1], Q))[0]
         total_distance += Distance
 
+    print(path_segments)
     return total_distance
 
 # Straight line approximation
@@ -140,98 +131,3 @@ def compute_distance(x, y, Q):
 
     Distance = quad(integrand, 0, 1, args=(x, y, Q))
     return Distance[0]
-
-# def mfd_dist(x, y):
-#     return dhyp(x, y)
-
-def mmc_Loss(Q, reg, mfd_dist):
-    Q = Q.reshape(DIMENSION, DIMENSION)
-    total = 0
-    for edge in S:
-        Qx = np.matmul(Q, edge[0][1:])
-        Qy = np.matmul(Q, edge[1][1:])
-        dQ = mfd_dist(Qx, Qy)
-        total += (1 - reg) * dQ
-
-    for edge in D:
-        Qx = np.matmul(Q, edge[0][1:])
-        Qy = np.matmul(Q, edge[1][1:])
-        dQ = mfd_dist(Qx, Qy)
-        total -= reg * dQ
-
-    return total
-
-
-def sim(x, Q, r, k):
-    neighbors = []
-    for edge in S:
-        w = x == edge[0][1:]
-        v = x == edge[1][1:]
-        # w = x == edge[0]
-        # v = x == edge[1]
-        Qx = np.matmul(Q, x)
-        if w.all():
-            Qy = np.matmul(Q, edge[1][1:])
-            # Qy = np.matmul(Q, edge[1])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                neighbors.append(Qy)
-        elif v.all():
-            Qy = np.matmul(Q, edge[0][1:])
-            # Qy = np.matmul(Q, edge[0])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                neighbors.append(Qy)
-        else:
-            pass
-
-    return neighbors
-
-def impostor(x, Q, r):
-    impostors = []
-    for edge in D:
-        w = x == edge[0][1:]
-        v = x == edge[1][1:]
-        # w = x == edge[0]
-        # v = x == edge[1]
-        Qx = np.matmul(Q, x)
-        if w.all():
-            Qy = np.matmul(Q, edge[1][1:])
-            # Qy = np.matmul(Q, edge[1])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                impostors.append(Qy)
-        elif v.all():
-            Qy = np.matmul(Q, edge[0][1:])
-            # Qy = np.matmul(Q, edge[1])
-            if np.linalg.norm(Qx - Qy)**2 < r**2:
-                impostors.append(Qy)
-        else:
-            pass
-
-    return impostors
-
-def mfd(x):
-    return np.concatenate(([np.sqrt(1 + np.matmul(x.T, x))], x))
-
-def lmnn_Loss(Q, radius, k, reg, mfd_dist):
-    Q = Q.reshape(DIMENSION, DIMENSION)
-    print(Q)
-    total = 0
-    for x in B:
-        x = x[1:]
-        Qx = np.matmul(Q, x)
-        Qx = mfd(Qx)
-        for Qy in sim(x, Q, radius, k):
-            Qy = mfd(Qy)
-            total += (1 - reg) * mfd_dist(Qx, Qy)
-
-    for x in B:
-        x = x[1:]
-        Qx = np.matmul(Q, x)
-        mQx = mfd(Qx)
-        for Qy in sim(x, Q, radius, k):
-            mQy = mfd(Qy)
-            for Qz in impostor(x, Q, radius):
-                mQz = mfd(Qz)
-                if np.linalg.norm(Qx - Qz)**2 < np.linalg.norm(Qx - Qy)**2:
-                    total += reg * (1 + mfd_dist(mQx, mQy) - mfd_dist(mQx, mQz))
-
-    return total
