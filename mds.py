@@ -15,7 +15,7 @@ from mfd_functions import *
 # intEdges = karate1['edges']
 
 trueEdges = []
-ptsperclass = 30
+ptsperclass = 15
 Labels = [0 for _ in range(ptsperclass * 20 + 13)]
 for idx, cat in enumerate(['alt', 'comp', 'misc', 'rec', 'sci', 'soc', 'talk']):
     trueEdges.append([0, idx])
