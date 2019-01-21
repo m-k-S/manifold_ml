@@ -186,8 +186,8 @@ def mds_initialization(npts, dim):
 
 B0 = mds_initialization(max_size, 2)
 
-mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
+mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, euc_mfd, euc_mfd_dist, None), method='Powell', options={'disp': True})
 print(mds_Powell)
 Bnew = mds_Powell.x.reshape(max_size, 2)
 print(Bnew)
-scipy.io.savemat('20newsgroup_hmds30.mat', mdict = {'arr': Bnew})
+scipy.io.savemat('20newsgroup_euc15.mat', mdict = {'arr': Bnew})
