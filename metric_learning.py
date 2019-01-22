@@ -403,6 +403,15 @@ elif datasetname == 'adjnoun':
     fxn_mfd_dist = hyp_mfd_dist
     fxn_integrand = None
 
+elif datasetname == '20newsgroup':
+    Beuc = scipy.io.loadmat('./data/20newsgroup_euc15_fix.mat')['arr']
+    Bhyp = scipy.io.loadmat('./data/20newsgroup_hmds_15_euc_seeded.mat')['arr']
+    Labels = scipy.io.loadmat('./data/20newsgroup_labels15.mat')['arr'].T
+    train_ratio = 0.7
+    fxn_mfd = hyp_mfd
+    fxn_mfd_dist = hyp_mfd_dist
+    fxn_integrand = None
+
 
 else:
     print('undefined dataset!')
@@ -418,16 +427,12 @@ fxn_euc_dist = euclid_mfd_dist
 #Q =
 
   # scipy.io.savemat('polblogs_hyp.mat', mdict = {'arr': B})
-
 nrounds = 10
-# k = 7
-# reg = 0.5
-# lmbd = 1.1
 
 
-err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
-# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
 # print ("EUC ORIG ERR: ")
 # print (err_euc_orig)
@@ -438,10 +443,10 @@ err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests
 # print ("MFD LRN ERR: ")
 # print (err_mfd_qlrn)
 
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
-scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
+scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
 
 
 # print(fxn_mfd) # <function hyp_mfd at 0x113050b70>
