@@ -13,7 +13,7 @@ from mfd_functions import *
 from metric_loss_functions import *
 
 def get_all_neighbors_of(FQx, label_of_FQx, FQB, labels, radius, k, mfd_dist_generic, mfd_integrand, todebug=False):
-################ CODE FOR K
+    # CODE FOR K
     dst_from_FQx = []
     for idx, FQxi in enumerate(FQB):
         dst_from_FQx.append( mfd_dist_generic(FQx, FQxi, mfd_integrand))
@@ -397,7 +397,7 @@ elif datasetname == 'polblogs':
 elif datasetname == 'adjnoun':
     Beuc = scipy.io.loadmat('./data/adjnoun_euc.mat')['arr']
     Bhyp = scipy.io.loadmat('./data/adjnoun_hmds.mat')['arr']
-    Labels = scipy.io.loadmat('./data/adjnoun_labels.mat')['arr'][0]
+    Labels = scipy.io.loadmat('./data/adjnoun_labels.mat')['arr'].T
     train_ratio = 0.7
     fxn_mfd = hyp_mfd
     fxn_mfd_dist = hyp_mfd_dist
@@ -410,6 +410,7 @@ else:
 
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
+
 
 # scipy.io.savemat('helicoid_Q.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, helicoid_mfd)})
 # scipy.io.savemat('karate_Qhyp.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, hyp_mfd)})
@@ -424,7 +425,7 @@ nrounds = 10
 # lmbd = 1.1
 
 
-# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
 # err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
@@ -449,66 +450,3 @@ scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(re
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
 # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
-
-
-'''
-nrounds = 10
-for datasetname in ['football', 'karate', 'polbooks']:
-    if datasetname == 'karate':
-        Beuc   = scipy.io.loadmat('./data/karate_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/karate_gmds_hyp.mat')['arr'] # this file has correct data in it!
-        Labels = scipy.io.loadmat('./data/karate_data_1.mat')['label']
-        train_ratio = 0.6
-        fxn_mfd = hyp_mfd
-        fxn_mfd_dist = hyp_mfd_dist
-        #fxn_integrand = integrand_hyp
-        fxn_integrand = None
-
-    elif datasetname == 'helicoid':
-        Beuc = scipy.io.loadmat('./data/helicoid.mat')['data']  # 3 D
-        Bhyp   = scipy.io.loadmat('./data/helicoid.mat')['base'] # 2 D
-        Labels = scipy.io.loadmat('./data/helicoid.mat')['labels']
-        train_ratio = 0.6
-        fxn_mfd = helicoid_mfd
-        fxn_mfd_dist = helicoid_mfd_dist
-        fxn_integrand = integrand_helicoid
-
-    elif datasetname == 'football':
-        Beuc   = scipy.io.loadmat('./data/football_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/football_gmds_hyp.mat')['arr'] # this file has correct data in it!
-        Labels = scipy.io.loadmat('./data/football_data_1.mat')['label']
-        train_ratio = 0.75
-        fxn_mfd = hyp_mfd
-        fxn_mfd_dist = hyp_mfd_dist
-        #fxn_integrand = integrand_hyp
-        fxn_integrand = None
-
-    elif datasetname == 'polbooks':
-        Beuc   = scipy.io.loadmat('./data/polbooks_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/polbooks_gmds_hyp.mat')['arr'] # this file has correct data in it!
-        Labels = scipy.io.loadmat('./data/polbooks_data_1.mat')['label']
-        train_ratio = 0.7
-        fxn_mfd = hyp_mfd
-        fxn_mfd_dist = hyp_mfd_dist
-        #fxn_integrand = integrand_hyp
-        fxn_integrand = None
-
-    for k in [1, 2, 3, 5, 8, 12]:
-        for lmbd in [0, 0.2, 0.5, 0.7, 1.0, 1.5, 2, 4, 7, 10]:
-            for reg in [0.1, 0.2, 0.4, 0.5, 0.7, 0.8]:
-                try:
-                    err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
-                    scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
-                    scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
-                    scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
-                    scipy.io.savemat('./'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_qlrn})
-                except IndexError:
-                    pass
-
-
-
-                # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_euc_orig_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_euc_orig})
-                # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_euc_qlrn_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_euc_qlrn})
-                # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_orig_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_mfd_orig})
-                # scipy.io.savemat('../../../../Dropbox/max - hyperbolic_mlearn/results/'+datasetname+'/'+datasetname+'_clf_err_mfd_qlrn_reg'+str(reg)+'_k'+str(k)+'.mat', mdict = {'arr': err_mfd_qlrn})
-'''
