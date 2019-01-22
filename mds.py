@@ -191,9 +191,9 @@ B0 = mds_initialization(max_size, 2)
 
 # discrete_metric = np.asarray(discrete_metric)
 # mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric[13:, 13:], hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
-mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, euclid_mfd, euclid_mfd_dist, None), method='Powell', options={'disp': True})
+mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
 
 print(mds_Powell)
 Bnew = mds_Powell.x.reshape(max_size, 2)
 print(Bnew)
-scipy.io.savemat('adjnoun_euc.mat', mdict = {'arr': Bnew})
+scipy.io.savemat('adjnoun_hmds.mat', mdict = {'arr': Bnew})
