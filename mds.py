@@ -199,6 +199,7 @@ def mds_initialization(npts, dim):
 max_size = max_size - 13
 # B0 = mds_initialization(max_size, 2)
 
+B0 = scipy.io.loadmat('./data/20newsgroup_euc15_fix.mat')['arr']
 # print(B0)
 discrete_metric = np.asarray(discrete_metric)
 
