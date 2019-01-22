@@ -53,7 +53,7 @@ def integrand_helicoid(t, x, y, Q):
 
 
 
-def learn_distance(x, y, Q, integrand, samples=100, segments=15):
+def learn_distance(x, y, Q, integrand, samples=100, segments=7):
     # x = x[1:]
     # y = y[1:]
 
@@ -145,9 +145,9 @@ def compute_distance(x, y, Q):
     Distance = quad(integrand, 0, 1, args=(x, y, Q))
     return Distance[0]
 
-x = np.asarray([1, 1])
-y = np.asarray([-1, -1])
+x = np.asarray([4, 1])
+y = np.asarray([3, -2])
 I = np.diag([1, 1])
-p_s = learn_distance(x, y, I, integrand_sinusoid)
+p_s = learn_distance(x, y, I, integrand_helicoid)
 
-scipy.io.savemat('sinusoid_path_segments.mat', mdict = {'arr': p_s})
+scipy.io.savemat('helicoid_path_segments.mat', mdict = {'arr': p_s})

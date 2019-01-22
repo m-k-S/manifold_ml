@@ -11,9 +11,9 @@ import numpy as np
 from scipy.optimize import minimize
 from mfd_functions import *
 
-# karate1 = scipy.io.loadmat('./karate_edges_new.mat')
-# intEdges = karate1['edges']
+H = nx.read_gml('./data/adjnoun.gml')
 
+'''
 trueEdges = []
 ptsperclass = 15
 Labels = [0 for _ in range(ptsperclass * 20 + 13)]
@@ -141,9 +141,11 @@ for idx, cat in enumerate(['alt', 'comp', 'misc', 'rec', 'sci', 'soc', 'talk']):
         for k in range(13 + (19 * ptsperclass), 13 + (20 * ptsperclass)):
             trueEdges.append([12, k])
             Labels[k] = 19
-
-G = nx.Graph()
-G.add_edges_from(trueEdges)
+'''
+# print(H.edges)
+G = nx.convert_node_labels_to_integers(H)
+# G = nx.Graph()
+# G.add_edges_from(trueEdges)
 max_size = G.order()
 discrete_metric = [[0 for _ in range(max_size)] for _ in range(max_size)]
 for i in range(max_size):
@@ -184,11 +186,14 @@ def mds_initialization(npts, dim):
 
     return np.asarray(pts)
 
+# max_size = max_size - 13
 B0 = mds_initialization(max_size, 2)
 
+# discrete_metric = np.asarray(discrete_metric)
+# mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric[13:, 13:], hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
+mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, euclid_mfd, euclid_mfd_dist, None), method='Powell', options={'disp': True})
 
-mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric[13:, 13:], hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
 print(mds_Powell)
 Bnew = mds_Powell.x.reshape(max_size, 2)
 print(Bnew)
-scipy.io.savemat('20newsgroup_hmds_new15.mat', mdict = {'arr': Bnew})
+scipy.io.savemat('adjnoun_euc.mat', mdict = {'arr': Bnew})
