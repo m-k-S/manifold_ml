@@ -11,7 +11,6 @@ import numpy as np
 from scipy.optimize import minimize
 from mfd_functions import *
 
-H = nx.read_gml('./data/adjnoun.gml')
 
 '''
 trueEdges = []
@@ -142,18 +141,28 @@ for idx, cat in enumerate(['alt', 'comp', 'misc', 'rec', 'sci', 'soc', 'talk']):
             trueEdges.append([12, k])
             Labels[k] = 19
 '''
-# print(H.edges)
+H = nx.read_gml('./data/adjnoun.gml')
+print(H.nodes)
 G = nx.convert_node_labels_to_integers(H)
+
+Labels = []
+for i in range(G.order()):
+    Labels.append(G.node[i]['value'])
+
+print(Labels)
+
+scipy.io.savemat('adjnoun_labels.mat', mdict = {'arr': Labels})
+
 # G = nx.Graph()
 # G.add_edges_from(trueEdges)
-max_size = G.order()
-discrete_metric = [[0 for _ in range(max_size)] for _ in range(max_size)]
-for i in range(max_size):
-    for j in range(max_size):
-        try:
-            discrete_metric[i][j] = len(nx.shortest_path(G, i, j)) - 1
-        except nx.exception.NetworkXNoPath:
-            discrete_metric[i][j] = 50
+# max_size = G.order()
+# discrete_metric = [[0 for _ in range(max_size)] for _ in range(max_size)]
+# for i in range(max_size):
+#     for j in range(max_size):
+#         try:
+#             discrete_metric[i][j] = len(nx.shortest_path(G, i, j)) - 1
+#         except nx.exception.NetworkXNoPath:
+#             discrete_metric[i][j] = 50
 
 
 # print(discrete_metric)
@@ -174,26 +183,39 @@ def mds_loss(B, npts, dim, Dist, mfd_generic, mfd_dist_generic, integrand):
         for j in range(i-1):  # traverse the upper triangular matrix
             #loss += (mfd_dist_generic(FB[i], FB[j]) - Dist[i][j])**2  # **2 is supposed to be squared CHECK SYNTAX
             loss += (mfd_dist_generic(FB[i], FB[j], integrand) - Dist[i][j]) ** 2  # no square because of outliers
-                                                                                    # stupid me it is being called
+
+    print(B)
     return loss
 
 def mds_initialization(npts, dim):
     pts = []
     mean = np.zeros(dim)
-    cov = np.diag(mean)
+    cov = np.diag([1 for _ in range(dim)])
     for i in range(npts):
         pts.append(np.random.multivariate_normal(mean, cov))
 
+    print(np.asarray(pts))
     return np.asarray(pts)
 
-# max_size = max_size - 13
+'''
+max_size = max_size - 13
 B0 = mds_initialization(max_size, 2)
 
-# discrete_metric = np.asarray(discrete_metric)
-# mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric[13:, 13:], hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
-mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
+# print(B0)
+discrete_metric = np.asarray(discrete_metric)
+
+
+def save_cur_pts(xk):
+    print("SAVING")
+    Bnew = xk.reshape(max_size, 2)
+    scipy.io.savemat('20newsgroup_hmds_15_mk2.mat', mdict = {'arr': Bnew})
+
+
+mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric[13:, 13:], hyp_mfd, hyp_mfd_dist, None), method='Nelder-Mead', options={'disp': True}, callback=save_cur_pts)
+# mds_Powell = minimize(mds_loss, B0, args=(max_size, 2, discrete_metric, hyp_mfd, hyp_mfd_dist, None), method='Powell', options={'disp': True})
 
 print(mds_Powell)
 Bnew = mds_Powell.x.reshape(max_size, 2)
 print(Bnew)
-scipy.io.savemat('adjnoun_hmds.mat', mdict = {'arr': Bnew})
+scipy.io.savemat('20newsgroup_hmds_15_mk2.mat', mdict = {'arr': Bnew})
+'''

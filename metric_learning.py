@@ -394,6 +394,16 @@ elif datasetname == 'polblogs':
     #fxn_integrand = integrand_hyp
     fxn_integrand = None
 
+elif datasetname == 'adjnoun':
+    Beuc = scipy.io.loadmat('./adjnoun_euc.mat')['arr']
+    Bhyp = scipy.io.loadmat('./adjnoun_hmds.mat')['arr']
+    Labels = scipy.io.loadmat('./adjnoun_labels.mat')['arr']
+    train_ratio = 0.7
+    fxn_mfd = hyp_mfd
+    fxn_mfd_dist = hyp_mfd_dist
+    fxn_integrand = None
+
+
 else:
     print('undefined dataset!')
     assert(1==0)
