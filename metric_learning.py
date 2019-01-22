@@ -404,9 +404,9 @@ elif datasetname == 'adjnoun':
     fxn_integrand = None
 
 elif datasetname == '20newsgroup':
-    Beuc = scipy.io.loadmat('./data/20newsgroup_euc15_fix.mat')['arr']
-    Bhyp = scipy.io.loadmat('./data/20newsgroup_hmds_15_euc_seeded.mat')['arr']
-    Labels = scipy.io.loadmat('./data/20newsgroup_labels15.mat')['arr'].T
+    Beuc = scipy.io.loadmat('./data/20newsgroup_euc15_no_outlier.mat')['arr']
+    Bhyp = scipy.io.loadmat('./data/20newsgroup_hmds15_no_outlier.mat')['arr']
+    Labels = scipy.io.loadmat('./data/20newsgroup_label15_no_outlier.mat')['arr'].T
     train_ratio = 0.7
     fxn_mfd = hyp_mfd
     fxn_mfd_dist = hyp_mfd_dist
@@ -419,7 +419,6 @@ else:
 
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
-
 
 # scipy.io.savemat('helicoid_Q.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, helicoid_mfd)})
 # scipy.io.savemat('karate_Qhyp.mat', mdict = {'arr': map_dataset_to_mfd(Bhyp, Q, hyp_mfd)})
