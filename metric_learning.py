@@ -395,9 +395,9 @@ elif datasetname == 'polblogs':
     fxn_integrand = None
 
 elif datasetname == 'adjnoun':
-    Beuc = scipy.io.loadmat('./adjnoun_euc.mat')['arr']
-    Bhyp = scipy.io.loadmat('./adjnoun_hmds.mat')['arr']
-    Labels = scipy.io.loadmat('./adjnoun_labels.mat')['arr']
+    Beuc = scipy.io.loadmat('./data/adjnoun_euc.mat')['arr']
+    Bhyp = scipy.io.loadmat('./data/adjnoun_hmds.mat')['arr']
+    Labels = scipy.io.loadmat('./data/adjnoun_labels.mat')['arr'][0]
     train_ratio = 0.7
     fxn_mfd = hyp_mfd
     fxn_mfd_dist = hyp_mfd_dist
@@ -407,7 +407,6 @@ elif datasetname == 'adjnoun':
 else:
     print('undefined dataset!')
     assert(1==0)
-
 
 fxn_euc = euclid_mfd
 fxn_euc_dist = euclid_mfd_dist
@@ -425,7 +424,7 @@ nrounds = 10
 # lmbd = 1.1
 
 
-err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+# err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_classification_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
 # err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
 
