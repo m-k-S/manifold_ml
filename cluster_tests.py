@@ -1,32 +1,15 @@
 import numpy as np
-from scipy.optimize import minimize
 from metric_loss_functions import *
-from mfd_functions import *
+from mfd_functions import map_dataset_to_mfd
+from scipy.optimize import minimize
 import random
 import sklearn.metrics
-
-def assign_k_random_points_from_fqb(FQB, k):
-    selection = []
-    for _ in range(k):
-        selection.append(random.choice(FQB))
-    return selection
 
 def kmeans_randomly_partition_data(FQB, k):
     assigned_labels = []
     for _ in FQB:
         assigned_labels.append(random.choice(range(k)))
     return assigned_labels
-
-
-
-###########################################################################################
-#def kmeans_swap_cost(FQB, assigned_labels, current_cost, idxx, proposed_label_x, mfd_dist_generic):
-#    new_cost = current_cost
-#
-#    curr_label_x = assigned_labels[idxx]
-#
-#    curr_sum
-#    return new_cost
 
 def kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, mfd_integrand, k):
     total_cost = 0
@@ -40,8 +23,6 @@ def kmeans_cost_of_assignment(FQB, assigned_labels, mfd_dist_generic, mfd_integr
                 total_cost += mfd_dist_generic(FQx,FQy, mfd_integrand) / (2*pts_per_clust[assigned_labels[idxx]])
 
     return total_cost
-
-###########################################################################################
 
 def kmeans_generic(FQB, k, mfd_dist_generic, mfd_integrand):
     assigned_labels = kmeans_randomly_partition_data(FQB, k)
@@ -84,7 +65,7 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     labels_tr = []
     labels_ts = []
     for i in range(npts):
-        if np.random.random() < train_ratio:   ####   CHECK SYNTAX
+        if np.random.random() < train_ratio:
             idx_tr.append(i)
             euc_data_tr.append(Bnew_euc[i])
             mfd_data_tr.append(Bnew_mfd[i])
@@ -99,22 +80,11 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     Q0_euc = np.diag([1 for _ in range(dim_euc)])
     Q0_mfd = np.diag([1 for _ in range(dim_mfd)])
 
-    # sv_cons = NonlinearConstraint(sv_constraint, 0, 1)
     euc_res_Powell = minimize(mmc_loss_generic, Q0_euc, args=(reg, lmbd, fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
     mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(mmc_loss_generic, Q0_mfd, args=(reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
-    # all_FQx_nbrs = {}  #  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< THIS IS GLOBAL VAR
-    # all_FQx_impos = {}
-    # euc_res_Powell = minimize(lmnn_loss_generic, Q0_euc, args=(100, k, reg, lmbd,  fxn_euc, fxn_euc_dist, None, euc_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, k, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='Powell', options={'disp': True})
-    # mfd_res_Powell = minimize(lmnn_loss_generic, Q0_mfd, args=(100, k, reg, lmbd, fxn_mfd, fxn_mfd_dist, fxn_integrand, mfd_data_tr, labels_tr), method='trust-constr', constraints=[sv_cons], options={'disp': True})
-    # print(mfd_res_Powell)
 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
-
-    # print (mfd_Qnew)
-    # print (np.matmul(mfd_Qnew.T, mfd_Qnew))
 
     euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
