@@ -11,6 +11,7 @@ if __name__ == "__main__":
 
     from cluster_tests import *
     from classification_tests import *
+    from manifold_functions import *
     import argparse
 
     parser = argparse.ArgumentParser()
