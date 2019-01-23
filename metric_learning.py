@@ -18,8 +18,8 @@ if __name__ == "__main__":
     parser.add_argument('--K')
     parser.add_argument('--reg')
     parser.add_argument('--lmbd')
-    parser.add_argument('--clf')
-    parser.add_argument('--clus')
+    parser.add_argument('--clf', action='store_true')
+    parser.add_argument('--clus', action='store_true')
     args = parser.parse_args()
 
     k = int(args.K)
