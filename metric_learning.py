@@ -15,7 +15,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset')
-    parser.add_argument('--method')
     parser.add_argument('--K')
     parser.add_argument('--reg')
     parser.add_argument('--lmbd')
@@ -23,24 +22,23 @@ if __name__ == "__main__":
     parser.add_argument('--clus')
     args = parser.parse_args()
 
-    method = args.method
     k = int(args.K)
     reg = float(args.reg)
     lmbd = float(args.lmbd)
     datasetname = args.dataset
 
     if datasetname == 'karate':
-        Beuc   = scipy.io.loadmat('./data/karate_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/karate_gmds_hyp.mat')['arr'] # this file has correct data in it!
-        Labels = scipy.io.loadmat('./data/karate_data_1.mat')['label']
+        Beuc   = scipy.io.loadmat('./data/karate.mat')['Beuc']
+        Bhyp   = scipy.io.loadmat('./data/karate.mat')['Bhyp']
+        Labels = scipy.io.loadmat('./data/karate.mat')['Labels']
         train_ratio = 0.8
         fxn_mfd = hyp_mfd
         fxn_mfd_dist = hyp_mfd_dist
         fxn_integrand = None
 
     elif datasetname == 'helicoid':
-        Beuc = scipy.io.loadmat('./data/helicoid.mat')['data']  # 3 D
-        Bhyp   = scipy.io.loadmat('./data/helicoid.mat')['base'] # 2 D
+        Beuc = scipy.io.loadmat('./data/helicoid.mat')['data']  # 3D
+        Bhyp   = scipy.io.loadmat('./data/helicoid.mat')['base'] # 2D
         Labels = scipy.io.loadmat('./data/helicoid.mat')['labels']
         train_ratio = 0.6
         fxn_mfd = helicoid_mfd
@@ -48,45 +46,36 @@ if __name__ == "__main__":
         fxn_integrand = integrand_helicoid
 
     elif datasetname == 'football':
-        Beuc   = scipy.io.loadmat('./data/football_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/football_gmds_hyp.mat')['arr'] # this file has correct data in it!
-        Labels = scipy.io.loadmat('./data/football_data_1.mat')['label']
+        Beuc   = scipy.io.loadmat('./data/football.mat')['Beuc']
+        Bhyp   = scipy.io.loadmat('./data/football.mat')['Bhyp']
+        Labels = scipy.io.loadmat('./data/football.mat')['Labels']
         train_ratio = 0.75
         fxn_mfd = hyp_mfd
         fxn_mfd_dist = hyp_mfd_dist
         fxn_integrand = None
 
     elif datasetname == 'polbooks':
-        Beuc   = scipy.io.loadmat('./data/polbooks_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/polbooks_gmds_hyp.mat')['arr'] # this file has correct data in it!
-        Labels = scipy.io.loadmat('./data/polbooks_data_1.mat')['label']
+        Beuc   = scipy.io.loadmat('./data/polbooks.mat')['Beuc']
+        Bhyp   = scipy.io.loadmat('./data/polbooks.mat')['Bhyp']
+        Labels = scipy.io.loadmat('./data/polbooks.mat')['Labels']
         train_ratio = 0.7
         fxn_mfd = hyp_mfd
         fxn_mfd_dist = hyp_mfd_dist
         fxn_integrand = None
 
-    elif datasetname == 'polblogs':
-        Beuc   = scipy.io.loadmat('./data/polblogs_euc.mat')['arr']
-        Bhyp   = scipy.io.loadmat('./data/polblogs_gmds_hyp.mat')['arr']  # FILE DOES NOT EXIST!  CORRESPONDING .txt doesnt exist (because the run was freezing)
-        Labels = scipy.io.loadmat('./data/polblogs_data_1.mat')['label']
-        train_ratio = 0.8
-        fxn_mfd = hyp_mfd
-        fxn_mfd_dist = hyp_mfd_dist
-        fxn_integrand = None
-
     elif datasetname == 'adjnoun':
-        Beuc = scipy.io.loadmat('./data/adjnoun_euc.mat')['arr']
-        Bhyp = scipy.io.loadmat('./data/adjnoun_hmds.mat')['arr']
-        Labels = scipy.io.loadmat('./data/adjnoun_labels.mat')['arr'].T
+        Beuc = scipy.io.loadmat('./data/adjnoun.mat')['Beuc']
+        Bhyp = scipy.io.loadmat('./data/adjnoun.mat')['Bhyp']
+        Labels = scipy.io.loadmat('./data/adjnoun.mat')['Labels']
         train_ratio = 0.7
         fxn_mfd = hyp_mfd
         fxn_mfd_dist = hyp_mfd_dist
         fxn_integrand = None
 
     elif datasetname == '20newsgroup':
-        Beuc = scipy.io.loadmat('./data/20newsgroup_euc15_no_outlier.mat')['arr']
-        Bhyp = scipy.io.loadmat('./data/20newsgroup_hmds15_no_outlier.mat')['arr']
-        Labels = scipy.io.loadmat('./data/20newsgroup_label15_no_outlier.mat')['arr'].T
+        Beuc = scipy.io.loadmat('./data/20newsgroup.mat')['Beuc']
+        Bhyp = scipy.io.loadmat('./data/20newsgroup.mat')['Bhyp']
+        Labels = scipy.io.loadmat('./data/20newsgroup.mat')['Labels']
         train_ratio = 0.7
         fxn_mfd = hyp_mfd
         fxn_mfd_dist = hyp_mfd_dist

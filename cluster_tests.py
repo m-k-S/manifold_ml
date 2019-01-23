@@ -109,11 +109,11 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
 
 
 def eval_cluster_quality(true_labels, assigned_labels):
-    true_labels = [i[0] for i in true_labels]   # this fixes the porblem? yes, code is running now -- ok
+    true_labels = [i[0] for i in true_labels]
 
-    ARI = sklearn.metrics.adjusted_rand_score(true_labels, assigned_labels)  # adjusted rand index   (higher number is better)
-    NMI = sklearn.metrics.normalized_mutual_info_score(true_labels, assigned_labels) # normalized mutual information (higer number is better)
-    err = [ARI, NMI]  # using TWO different evaluation metrics   <<<<< CHECK SYNTAX is fine?
+    ARI = sklearn.metrics.adjusted_rand_score(true_labels, assigned_labels)
+    NMI = sklearn.metrics.normalized_mutual_info_score(true_labels, assigned_labels) 
+    err = [ARI, NMI]
     return err
 
 def do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
