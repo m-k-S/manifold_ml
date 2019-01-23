@@ -18,11 +18,14 @@ The code should run out of the box, assuming dependencies are installed. Please 
 To run clustering tests on metric learning, use the following syntax:
 
 ```
-python3 metric_learning.py --dataset DATASET --lmbd LAMBDA --reg REG --clus```
+python3 metric_learning.py --dataset DATASET --lmbd LAMBDA --reg REG --clus
+```
 
 Similarly, for classification, use the following:
+
 ```
-python3 metric_learning.py --dataset DATASET --K k --lmbd LAMBDA --reg REG --clf```
+python3 metric_learning.py --dataset DATASET --K k --lmbd LAMBDA --reg REG --clf
+```
 
 k is used in classification tests to specify the k in k-nearest neighbor. Reg should be a float between 0.0 and 1.0 and specifies the regularization term in the loss function. Lambda should be a float, and specifies how much scaling is penalized during optimization. Dataset names available out of the box are: football, polbooks, karate, adjnoun, helicoid and 20newsgroup.
 
