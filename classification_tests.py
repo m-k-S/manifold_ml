@@ -1,6 +1,6 @@
 import numpy as np
-from metric_loss_functions import *
-from mfd_functions import map_dataset_to_mfd
+from loss_functions import *
+from manifold_functions import map_dataset_to_mfd
 from scipy.optimize import minimize
 import scipy.stats
 

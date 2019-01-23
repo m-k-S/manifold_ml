@@ -1,6 +1,6 @@
 import numpy as np
-from metric_loss_functions import *
-from mfd_functions import map_dataset_to_mfd
+from loss_functions import *
+from manifold_functions import map_dataset_to_mfd
 from scipy.optimize import minimize
 import random
 import sklearn.metrics
@@ -112,7 +112,7 @@ def eval_cluster_quality(true_labels, assigned_labels):
     true_labels = [i[0] for i in true_labels]
 
     ARI = sklearn.metrics.adjusted_rand_score(true_labels, assigned_labels)
-    NMI = sklearn.metrics.normalized_mutual_info_score(true_labels, assigned_labels) 
+    NMI = sklearn.metrics.normalized_mutual_info_score(true_labels, assigned_labels)
     err = [ARI, NMI]
     return err
 
