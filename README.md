@@ -1,4 +1,4 @@
-Manifold Metric Learning
+Metric Learning on Non-Euclidean Spaces
 =====
 
 ## Dependencies
