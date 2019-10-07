@@ -6,6 +6,56 @@
 
 import numpy as np
 from learn_manifold_distance import learn_distance
+from scipy.optimize import minimize
+
+
+# FUNCTIONS FOR KLEIN BOTTLE:
+def klein_mfd(x):
+    u = x[0]
+    v = x[1]
+    mp = [np.cos(u) * (np.cos(0.5 * u) * (np.sqrt(2) + np.cos(v)) + np.sin(0.5 * u) * np.sin(v) * np.cos(v)), \
+          np.sin(u) * (np.cos(0.5 * u) * (np.sqrt(2) + np.cos(v)) + np.sin(0.5 * u) * np.sin(v) * np.cos(v)), \
+          -np.sin(0.5 * u) * (np.sqrt(2) + np.cos(v)) + np.cos(0.5 * u) * np.sin(v) * np.cos(v)]
+    return mp
+
+def integrand_klein(t, x, y, Q):
+    Pth = (1 - t) * x + (y * t)
+    Dff = y-x   # 2 x 1
+    u = Pth[0]
+    v = Pth[1]
+
+    a = np.cos(0.5 * u) * (np.sqrt(2) + np.cos(v)) + np.sin(0.5 * u) * np.sin(v) * np.cos(v)
+    da_du = -0.5 * np.sin(0.5 * u) * (np.sqrt(2) + np.cos(v)) + 0.5 * np.cos(0.5 * u) * np.sin(v) * np.cos(v)
+    da_dv = -np.sin(v) * np.cos(0.5 * u) + np.sin(0.5 * u) * (np.cos(2 * v))
+
+    D = [ [np.cos(u) * da_du - a * np.sin(u), np.cos(u) * da_dv], \
+          [np.sin(u) * da_du + a * np.cos(u), np.sin(u) * da_dv], \
+          [-0.5 * np.cos(0.5 * u) * (np.sqrt(2) + np.cos(v)) - 0.5 * np.sin(0.5 * u) * np.sin(v) * np.cos(v), \
+                            np.sin(v) * np.sin(0.5 * u) + np.cos(0.5 * u) (np.cos(2 * v))]]
+
+    v = np.matmul(D, np.matmul(Q, Dff))
+    return np.linalg.norm(v)
+
+def klein_obj(v, u, z):
+    return (-np.sin(0.5 * u) * (np.sqrt(2) + np.cos(v)) + 0.5 * np.cos(0.5 * 2) * np.sin(2 * v) - z)**2
+
+def klein_mfd_dist(x, y, integrand=integrand_klein):
+    xu = np.arctan(x[1]/x[0])
+    xv0 = 2
+    min_coord = minimize(klein_obj, xv0, args=(xu, x[2]), method='Powell', options={'disp': True})
+    xv = min_coord.x
+
+    yu = np.arctan(y[1]/y[0])
+    yv0 = 2
+    min_coord = minimize(klein_obj, yv0, args=(yu, y[2]), method='Powell', options={'disp': True})
+    yv = min_coord.x
+
+    bx = np.asarray([np.abs(xu), xv])
+    by = np.asarray([np.abs(yu), yv])
+
+    dist = learn_distancex(bx, by, I, integrand)
+    return dist
+
 
 # FUNCTIONS FOR HELICOID MANIFOLD:
 

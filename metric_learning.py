@@ -92,6 +92,16 @@ if __name__ == "__main__":
         fxn_mfd_dist = hyp_mfd_dist
         fxn_integrand = None
 
+    elif datasetname == 'klein':
+        ensure_dir(os.path.dirname(os.path.abspath(__file__)) + "/klein")
+        Beuc = scipy.io.loadmat('./data/klein.mat')['Beuc']
+        Bhyp = scipy.io.loadmat('./data/klein.mat')['Bklein']
+        Labels = scipy.io.loadmat('./data/klein.mat')['labels']
+        train_ratio = 0.7
+        fxn_mfd = klein_mfd
+        fxn_mfd_dist = klein_mfd_dist
+        fxn_integrand = integrand_klein
+
     else:
         print('Undefined dataset!')
         exit()
