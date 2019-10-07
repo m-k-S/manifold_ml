@@ -52,7 +52,7 @@ def klein_mfd_dist(x, y, integrand=integrand_klein):
 
     bx = np.asarray([np.abs(xu), xv])
     by = np.asarray([np.abs(yu), yv])
-
+    I = np.identity(2)
     dist = learn_distance(bx, by, I, integrand)
     return dist
 
