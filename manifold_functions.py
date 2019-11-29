@@ -57,6 +57,99 @@ def klein_mfd_dist(x, y, integrand=integrand_klein):
     return dist
 
 
+# FUNCTIONS FOR SWISSROLL MANIFOLD:
+def swiss_mfd(x):
+    r = x[0]
+    s = x[1]
+    mp = [r * np.cos(r), s, r * np.sin(r)]
+    return mp
+
+def integrand_swiss(t, x, y, Q):
+    Pth = (1 - t) * x + (y * t)
+    Dff = y-x   # 2 x 1
+
+    r = Pth[0]
+    s = Pth[1]
+    D = np.asarray([[np.cos(r) - r * np.sin(r), 0],
+        [0, 1],
+        [np.sin(r) + r * np.cos(r), 0]]).astype(float)
+    v = np.matmul(D, np.matmul(Q, Dff))
+    return np.linalg.norm(v)
+
+def swiss_mfd_dist(x, y, integrand=integrand_swiss):
+    xr = np.arctan(x[2] / x[0])
+    xs = x[1]
+
+    yr = np.arctan(y[2] / y[0])
+    ys = y[1]
+
+    bx = np.asarray([np.abs(xr), xs])
+    by = np.asarray([np.abs(yr), ys])
+    dist = learn_distance(bx, by, np.eye(2), integrand)
+    return dist
+
+# FUNCTIONS FOR TORUS MANIFOLD
+# Outer radius 4, inner radius 1
+
+def torus_mfd(x):
+    r = x[0]
+    s = x[1]
+    mp = [4 + np.cos(r) * np.cos(s), 4 + np.cos(r) * np.sin(s), np.sin(r)]
+    return mp
+
+def integrand_torus(t, x, y, Q):
+    Pth = (1 - t) * x + (y * t)
+    Dff = y-x   # 2 x 1
+
+    r = Pth[0]
+    s = Pth[1]
+    D = np.asarray([[-np.sin(r) * np.cos(s), -np.sin(s) * np.cos(r)],
+        [-np.sin(r) * np.sin(s), np.cos(r) * np.cos(s)],
+        [np.cos(r), 0]])
+    v = np.matmul(D, np.matmul(Q, Dff))
+    return np.linalg.norm(v)
+
+def torus_mfd_dist(x, y, integrand=integrand_helicoid):
+    xr = np.arcsin(x[2])
+    xs = np.arctan( (x[1] - 4) / (x[0] - 4))
+
+    yr = np.arcsin(y[2])
+    ys = np.arctan( (y[1] - 4) / (y[0] - 4))
+
+    bx = np.asarray([np.abs(xr), xs])
+    by = np.asarray([np.abs(yr), ys])
+
+    dist = learn_distance(bx, by, np.eye(2), integrand)
+    return dist
+
+# FUNCTIONS FOR TREFOIL MANIFOLD
+
+def trefoil_mfd(x):
+    return [np.cos(x) + 2 * np.cos(2 * x), np.sin(x) - 2 * np.sin(2 * x), 2 * np.sin(3*x)]
+
+def integrand_trefoil(t, x, y, Q):
+    Pth = (1 - t) * x + (y * t)
+    Dff = y-x   # 2 x 1
+
+    r = Pth[0]
+    s = Pth[1]
+    D = np.asarray([[-np.sin(x) - 4 * np.sin(2 * x)],
+        [np.cos(x) - 4 * np.sin(2 * x)],
+        [6 * np.cos(3 * x)]])
+
+    v = np.matmul(D, np.matmul(Q, Dff))
+    return np.linalg.norm(v)
+
+def trefoil_mfd_dist(x, y, integrand=integrand_helicoid):
+    xt = np.arcsin(x[2] / 2) / 3
+    yt = np.arcsin(y[2] / 2) / 3
+
+    bx = np.asarray([np.abs(xt)])
+    by = np.asarray([np.abs(yt)])
+
+    dist = learn_distance(bx, by, np.eye(1), integrand)
+    return dist
+
 # FUNCTIONS FOR HELICOID MANIFOLD:
 
 # Input: base space coordinates
@@ -93,7 +186,7 @@ def helicoid_mfd_dist(x, y, integrand=integrand_helicoid):
     bx = np.asarray([np.abs(xr), xs])
     by = np.asarray([np.abs(yr), ys])
 
-    dist = learn_distance(bx, by, I, integrand)
+    dist = learn_distance(bx, by, np.eye(2), integrand)
     return dist
 
 # FUNCTIONS FOR HYPERBOLOID:

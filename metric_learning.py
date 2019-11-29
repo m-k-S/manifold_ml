@@ -102,6 +102,16 @@ if __name__ == "__main__":
         fxn_mfd_dist = klein_mfd_dist
         fxn_integrand = integrand_klein
 
+    elif datasetname == 'swiss':
+        ensure_dir(os.path.dirname(os.path.abspath(__file__)) + "/swiss")
+        Beuc = scipy.io.loadmat('./data/swiss.mat')['swiss_base']
+        Bhyp = scipy.io.loadmat('./data/swiss.mat')['swiss_data']
+        Labels = scipy.io.loadmat('./data/swiss.mat')['swiss_labels']
+        train_ratio = 0.7
+        fxn_mfd = swiss_mfd
+        fxn_mfd_dist = swiss_mfd_dist
+        fxn_integrand = integrand_swiss
+
     else:
         print('Undefined dataset!')
         exit()
