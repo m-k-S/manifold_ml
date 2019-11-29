@@ -127,7 +127,7 @@ def torus_mfd_dist(x, y, integrand=integrand_torus):
 def trefoil_mfd(x):
     return [np.cos(x) + 2 * np.cos(2 * x), np.sin(x) - 2 * np.sin(2 * x), 2 * np.sin(3*x)]
 
-def trefoil_mfd_base_dist(x, y):
+def trefoil_mfd_base_dist(x, y, integrand):
     xt = np.arcsin(x[2] / 2) / 3
     yt = np.arcsin(y[2] / 2) / 3
 
