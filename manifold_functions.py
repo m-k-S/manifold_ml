@@ -76,6 +76,18 @@ def integrand_swiss(t, x, y, Q):
     v = np.matmul(D, np.matmul(Q, Dff))
     return np.linalg.norm(v)
 
+def swiss_mfd_base_dist(x, y, integrand):
+    xr = np.arctan(x[2] / x[0])
+    xs = x[1]
+
+    yr = np.arctan(y[2] / y[0])
+    ys = y[1]
+
+    bx = np.asarray([xr, xs])
+    by = np.asarray([yr, ys])
+
+    return np.linalg.norm(bx - by)
+
 def swiss_mfd_dist(x, y, integrand=integrand_swiss):
     xr = np.arctan(x[2] / x[0])
     xs = x[1]
@@ -108,6 +120,18 @@ def integrand_torus(t, x, y, Q):
         [np.cos(r), 0]])
     v = np.matmul(D, np.matmul(Q, Dff))
     return np.linalg.norm(v)
+
+def torus_mfd_base_dist(x, y, integrand):
+    xr = np.arcsin(x[2])
+    xs = np.arctan( (x[1] - 4) / (x[0] - 4))
+
+    yr = np.arcsin(y[2])
+    ys = np.arctan( (y[1] - 4) / (y[0] - 4))
+
+    bx = np.asarray([xr, xs])
+    by = np.asarray([yr, ys])
+
+    return np.linalg.norm(bx - by)
 
 def torus_mfd_dist(x, y, integrand=integrand_torus):
     xr = np.arcsin(x[2])

@@ -109,8 +109,8 @@ if __name__ == "__main__":
         Labels = scipy.io.loadmat('./data/swiss.mat')['swiss_labels']
         train_ratio = 0.7
         fxn_mfd = swiss_mfd
-        fxn_mfd_dist = swiss_mfd_dist
-        fxn_integrand = integrand_swiss
+        fxn_mfd_dist = swiss_mfd_base_dist
+        fxn_integrand = None
 
     elif datasetname == 'torus':
         ensure_dir(os.path.dirname(os.path.abspath(__file__)) + "/torus")
@@ -119,8 +119,8 @@ if __name__ == "__main__":
         Labels = scipy.io.loadmat('./data/torus.mat')['torus_labels']
         train_ratio = 0.7
         fxn_mfd = torus_mfd
-        fxn_mfd_dist = torus_mfd_dist
-        fxn_integrand = integrand_torus
+        fxn_mfd_dist = torus_mfd_base_dist
+        fxn_integrand = None
 
     elif datasetname == 'trefoil':
         ensure_dir(os.path.dirname(os.path.abspath(__file__)) + "/trefoil")
