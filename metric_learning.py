@@ -129,8 +129,8 @@ if __name__ == "__main__":
         Labels = scipy.io.loadmat('./data/trefoil.mat')['trefoil_labels']
         train_ratio = 0.7
         fxn_mfd = trefoil_mfd
-        fxn_mfd_dist = trefoil_mfd_dist
-        fxn_integrand = integrand_trefoil
+        fxn_mfd_dist = trefoil_mfd_base_dist
+        fxn_integrand = None
 
 
     else:
