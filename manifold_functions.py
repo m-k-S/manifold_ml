@@ -109,7 +109,7 @@ def integrand_torus(t, x, y, Q):
     v = np.matmul(D, np.matmul(Q, Dff))
     return np.linalg.norm(v)
 
-def torus_mfd_dist(x, y, integrand=integrand_helicoid):
+def torus_mfd_dist(x, y, integrand=integrand_torus):
     xr = np.arcsin(x[2])
     xs = np.arctan( (x[1] - 4) / (x[0] - 4))
 
@@ -140,7 +140,7 @@ def integrand_trefoil(t, x, y, Q):
     v = np.matmul(D, np.matmul(Q, Dff))
     return np.linalg.norm(v)
 
-def trefoil_mfd_dist(x, y, integrand=integrand_helicoid):
+def trefoil_mfd_dist(x, y, integrand=integrand_trefoil):
     xt = np.arcsin(x[2] / 2) / 3
     yt = np.arcsin(y[2] / 2) / 3
 

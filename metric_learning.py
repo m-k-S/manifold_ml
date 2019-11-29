@@ -112,6 +112,27 @@ if __name__ == "__main__":
         fxn_mfd_dist = swiss_mfd_dist
         fxn_integrand = integrand_swiss
 
+    elif datasetname == 'torus':
+        ensure_dir(os.path.dirname(os.path.abspath(__file__)) + "/torus")
+        Beuc = scipy.io.loadmat('./data/torus.mat')['torus_base']
+        Bhyp = scipy.io.loadmat('./data/torus.mat')['torus_data']
+        Labels = scipy.io.loadmat('./data/torus.mat')['torus_labels']
+        train_ratio = 0.7
+        fxn_mfd = torus_mfd
+        fxn_mfd_dist = torus_mfd_dist
+        fxn_integrand = integrand_torus
+
+    elif datasetname == 'trefoil':
+        ensure_dir(os.path.dirname(os.path.abspath(__file__)) + "/trefoil")
+        Beuc = scipy.io.loadmat('./data/trefoil.mat')['trefoil_base']
+        Bhyp = scipy.io.loadmat('./data/trefoil.mat')['trefoil_data']
+        Labels = scipy.io.loadmat('./data/trefoil.mat')['trefoil_labels']
+        train_ratio = 0.7
+        fxn_mfd = trefoil_mfd
+        fxn_mfd_dist = trefoil_mfd_dist
+        fxn_integrand = integrand_trefoil
+
+
     else:
         print('Undefined dataset!')
         exit()
