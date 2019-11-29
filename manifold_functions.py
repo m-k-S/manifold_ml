@@ -131,11 +131,10 @@ def integrand_trefoil(t, x, y, Q):
     Pth = (1 - t) * x + (y * t)
     Dff = y-x   # 2 x 1
 
-    r = Pth[0]
-    s = Pth[1]
-    D = np.asarray([[-np.sin(x) - 4 * np.sin(2 * x)],
-        [np.cos(x) - 4 * np.sin(2 * x)],
-        [6 * np.cos(3 * x)]])
+    r = Pth
+    D = np.asarray([[-np.sin(r) - 4 * np.sin(2 * r)],
+        [np.cos(r) - 4 * np.sin(2 * r)],
+        [6 * np.cos(3 * r)]])
 
     v = np.matmul(D, np.matmul(Q, Dff))
     return np.linalg.norm(v)
