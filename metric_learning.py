@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.io
+from sklearn.model_selection import train_test_split
 
 # ----------------------------------------------------------------------------------------------------
 #
@@ -107,6 +108,9 @@ if __name__ == "__main__":
         Beuc = scipy.io.loadmat('./data/swiss.mat')['swiss_base']
         Bhyp = scipy.io.loadmat('./data/swiss.mat')['swiss_data']
         Labels = scipy.io.loadmat('./data/swiss.mat')['swiss_labels']
+
+        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.3)
+
         train_ratio = 0.7
         fxn_mfd = swiss_mfd
         fxn_mfd_dist = swiss_mfd_base_dist
@@ -117,6 +121,9 @@ if __name__ == "__main__":
         Beuc = scipy.io.loadmat('./data/torus.mat')['torus_base']
         Bhyp = scipy.io.loadmat('./data/torus.mat')['torus_data']
         Labels = scipy.io.loadmat('./data/torus.mat')['torus_labels']
+
+        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.3)
+
         train_ratio = 0.7
         fxn_mfd = torus_mfd
         fxn_mfd_dist = torus_mfd_base_dist
@@ -127,6 +134,9 @@ if __name__ == "__main__":
         Beuc = scipy.io.loadmat('./data/trefoil.mat')['trefoil_base']
         Bhyp = scipy.io.loadmat('./data/trefoil.mat')['trefoil_data']
         Labels = scipy.io.loadmat('./data/trefoil.mat')['trefoil_labels']
+
+        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.3)
+
         train_ratio = 0.7
         fxn_mfd = trefoil_mfd
         fxn_mfd_dist = trefoil_mfd_base_dist
@@ -139,7 +149,7 @@ if __name__ == "__main__":
 
     fxn_euc = euclid_mfd
     fxn_euc_dist = euclid_mfd_dist
-    nrounds = 10
+    nrounds = 2
 
     if args.clf:
         k = int(args.K)
