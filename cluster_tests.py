@@ -52,7 +52,7 @@ def kmeans_generic(FQB, k, mfd_dist_generic, mfd_integrand):
     return assigned_labels
 
 
-def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
+def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels, datasetname):
     npts = len(Bnew_euc)
     dim_euc = len(Bnew_euc[0])
     dim_mfd = len(Bnew_mfd[0])
@@ -87,7 +87,7 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
 
-    scipy.io.savemat('./Q'+lmbd+'.mat', mdict = {'arr': mfd_Qnew})
+    scipy.io.savemat('./Q'+datasetname+'.mat', mdict = {'arr': mfd_Qnew})
 
     euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
@@ -119,14 +119,14 @@ def eval_cluster_quality(true_labels, assigned_labels):
     err = [ARI, NMI]
     return err
 
-def do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels):
+def do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels, datasetname):
     err_euc_orig = []
     err_euc_qlrn = []
     err_mfd_orig = []
     err_mfd_qlrn = []
 
     for r in range(nrounds):
-        eeo,eeq,emo,emq = do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels)
+        eeo,eeq,emo,emq = do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, Bnew_mfd, fxn_mfd, fxn_mfd_dist, fxn_integrand, true_labels, datasetname)
         err_euc_orig.append(eeo)
         err_euc_qlrn.append(eeq)
         err_mfd_orig.append(emo)

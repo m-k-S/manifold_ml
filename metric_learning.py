@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     elif args.clus:
         k = 0
-        err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels)
+        err_euc_orig, err_euc_qlrn, err_mfd_orig, err_mfd_qlrn = do_cluster_tests_all(nrounds, train_ratio, k, reg, lmbd, Beuc, fxn_euc, fxn_euc_dist, Bhyp, fxn_mfd, fxn_mfd_dist, fxn_integrand, Labels, datasetname)
         scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_euc_orig_reg'+str(reg)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_orig})
         scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_euc_qlrn_reg'+str(reg)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_euc_qlrn})
         scipy.io.savemat('./'+datasetname+'/'+datasetname+'_CLUS_err_mfd_orig_reg'+str(reg)+'_lmbd'+str(lmbd)+'.mat', mdict = {'arr': err_mfd_orig})
