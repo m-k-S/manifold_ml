@@ -4,6 +4,7 @@ from manifold_functions import map_dataset_to_mfd
 from scipy.optimize import minimize
 import random
 import sklearn.metrics
+import scipy.io
 
 def kmeans_randomly_partition_data(FQB, k):
     assigned_labels = []
@@ -85,6 +86,8 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
+
+    scipy.io.savemat('./Q'+lmbd+'.mat', mdict = {'arr': mfd_Qnew})
 
     euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
