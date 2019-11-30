@@ -87,12 +87,12 @@ def do_cluster_test(train_ratio, k, reg, lmbd, Bnew_euc, fxn_euc, fxn_euc_dist, 
     euc_Qnew = euc_res_Powell.x.reshape(dim_euc, dim_euc)
     mfd_Qnew = mfd_res_Powell.x.reshape(dim_mfd, dim_mfd)
 
-    scipy.io.savemat('./Q'+datasetname+'.mat', mdict = {'arr': mfd_Qnew})
-
     euc_Qdata_ts = map_dataset_to_mfd(euc_data_ts, euc_Qnew, fxn_euc)
     mfd_Qdata_ts = map_dataset_to_mfd(mfd_data_ts, mfd_Qnew, fxn_mfd)
     euc_Idata_ts = map_dataset_to_mfd(euc_data_ts, Q0_euc, fxn_euc)
     mfd_Idata_ts = map_dataset_to_mfd(mfd_data_ts, Q0_mfd, fxn_mfd)
+
+    scipy.io.savemat('./Q'+datasetname+'.mat', mdict = {'Q': mfd_Qnew, 'data': mfd_Idata_ts})
 
         # run k-means
     K = len(np.unique(true_labels))   # number of unique labels is the value of K in K-means

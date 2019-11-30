@@ -109,7 +109,7 @@ if __name__ == "__main__":
         Bhyp = scipy.io.loadmat('./data/swiss.mat')['swiss_data']
         Labels = scipy.io.loadmat('./data/swiss.mat')['swiss_labels']
 
-        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.3)
+        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.4)
 
         train_ratio = 0.7
         fxn_mfd = swiss_mfd
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         Bhyp = scipy.io.loadmat('./data/torus.mat')['torus_data']
         Labels = scipy.io.loadmat('./data/torus.mat')['torus_labels']
 
-        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.3)
+        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.4)
 
         train_ratio = 0.7
         fxn_mfd = torus_mfd
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         Bhyp = scipy.io.loadmat('./data/trefoil.mat')['trefoil_data']
         Labels = scipy.io.loadmat('./data/trefoil.mat')['trefoil_labels']
 
-        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.3)
+        _, Beuc, __, Bhyp, ___, Labels = train_test_split(Beuc, Bhyp, Labels, test_size=0.4)
 
         train_ratio = 0.7
         fxn_mfd = trefoil_mfd
